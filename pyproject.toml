@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 spark = [
+    "boto3>=1.35",
     "delta-spark==4.0.1",
     "pyspark==4.0.1",
 ]

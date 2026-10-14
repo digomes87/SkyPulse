@@ -11,6 +11,9 @@ from datetime import datetime
 from itertools import batched
 from typing import Any, Protocol
 
+import boto3
+
+from skypulse.common.config import Settings
 from skypulse.contracts import Event, EventSource, EventType, contract_for
 
 SNS_BATCH_LIMIT = 10
@@ -67,3 +70,11 @@ class SnsAnnouncer:
                 raise RuntimeError(f"SNS rejected {len(failed)} disruption messages: {failed}")
             sent += len(group)
         return sent
+
+
+def sns_announcer(settings: Settings) -> SnsAnnouncer:
+    """SNS client for the run mode, publishing to the disruptions topic of this account."""
+    options = {"endpoint_url": settings.aws_endpoint_url, "region_name": settings.aws.region}
+    account = boto3.client("sts", **options).get_caller_identity()["Account"]
+    topic_arn = f"arn:aws:sns:{settings.aws.region}:{account}:{settings.events.disruptions_topic}"
+    return SnsAnnouncer(boto3.client("sns", **options), topic_arn)

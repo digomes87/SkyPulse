@@ -8,7 +8,9 @@ from pyspark.sql.streaming.query import StreamingQuery
 
 from skypulse.common.config import Settings
 from skypulse.common.logging import configure_logging, get_logger
+from skypulse.streaming.announcements import sns_announcer
 from skypulse.streaming.bronze import start_bronze
+from skypulse.streaming.detector import start_detector
 from skypulse.streaming.jobs import ensure_quarantine_table, start_quarantine, start_silver
 from skypulse.streaming.session import Connectors, build_session
 from skypulse.streaming.silver import SILVER_TABLES
@@ -20,6 +22,7 @@ _log = get_logger(__name__)
 class Stage(StrEnum):
     BRONZE = "bronze"
     SILVER = "silver"
+    DETECTOR = "detector"
 
     def connectors(self, settings: Settings) -> Connectors:
         uses_s3 = settings.lake.root_uri is None
@@ -31,6 +34,8 @@ def start_stage(
 ) -> list[StreamingQuery]:
     if stage is Stage.BRONZE:
         return [start_bronze(spark, settings, trigger)]
+    if stage is Stage.DETECTOR:
+        return [start_detector(spark, settings, sns_announcer(settings), trigger)]
     ensure_quarantine_table(spark, settings, SILVER_TABLES[0])
     silver = [start_silver(spark, settings, table, trigger) for table in SILVER_TABLES]
     quarantine = [start_quarantine(spark, settings, table, trigger) for table in SILVER_TABLES]

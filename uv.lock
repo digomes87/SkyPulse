@@ -785,6 +785,7 @@ dependencies = [
 
 [package.optional-dependencies]
 spark = [
+    { name = "boto3" },
     { name = "delta-spark" },
     { name = "pyspark" },
 ]
@@ -804,6 +805,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "boto3", marker = "extra == 'spark'", specifier = ">=1.35" },
     { name = "confluent-kafka", specifier = ">=2.16.0" },
     { name = "delta-spark", marker = "extra == 'spark'", specifier = "==4.0.1" },
     { name = "httpx", specifier = ">=0.28.1" },
