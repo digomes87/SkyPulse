@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/digomes87/SkyPulse/contracts/metar-observation.v1.json",
+  "title": "metar_observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "source",
+    "produced_at",
+    "data"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Deterministic UUIDv5 of the natural key; re-ingesting the same observation yields the same id."
+    },
+    "event_type": {
+      "const": "metar_observation"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "source": {
+      "enum": [
+        "aviationweather",
+        "replay"
+      ]
+    },
+    "produced_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "station_icao",
+        "observed_at",
+        "report_type",
+        "wind_direction_degrees",
+        "wind_variable",
+        "wind_speed_kt",
+        "wind_gust_kt",
+        "visibility_m",
+        "present_weather",
+        "temperature_c",
+        "dewpoint_c",
+        "altimeter_hpa",
+        "flight_category",
+        "raw_text"
+      ],
+      "properties": {
+        "station_icao": {
+          "type": "string",
+          "pattern": "^[A-Z0-9]{4}$"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "report_type": {
+          "enum": [
+            "METAR",
+            "SPECI"
+          ]
+        },
+        "wind_direction_degrees": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 360
+        },
+        "wind_variable": {
+          "type": "boolean"
+        },
+        "wind_speed_kt": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "wind_gust_kt": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "visibility_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Prevailing visibility in metres; 9999 means 10 km or more."
+        },
+        "present_weather": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "METAR present-weather groups, e.g. '+TSRA BR'."
+        },
+        "temperature_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dewpoint_c": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "altimeter_hpa": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "flight_category": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "VFR",
+            "MVFR",
+            "IFR",
+            "LIFR",
+            null
+          ]
+        },
+        "raw_text": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

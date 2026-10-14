@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/digomes87/SkyPulse/contracts/aircraft-state.v1.json",
+  "title": "aircraft_state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "source",
+    "produced_at",
+    "data"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Deterministic UUIDv5 of the natural key; re-ingesting the same observation yields the same id."
+    },
+    "event_type": {
+      "const": "aircraft_state"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "source": {
+      "enum": [
+        "opensky",
+        "replay"
+      ]
+    },
+    "produced_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "icao24",
+        "callsign",
+        "origin_country",
+        "time_position",
+        "last_contact",
+        "longitude",
+        "latitude",
+        "baro_altitude",
+        "on_ground",
+        "velocity",
+        "true_track",
+        "vertical_rate",
+        "geo_altitude",
+        "squawk",
+        "spi",
+        "position_source",
+        "snapshot_time"
+      ],
+      "properties": {
+        "icao24": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{6}$"
+        },
+        "callsign": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 8
+        },
+        "origin_country": {
+          "type": "string"
+        },
+        "time_position": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "last_contact": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "longitude": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -180,
+          "maximum": 180
+        },
+        "latitude": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -90,
+          "maximum": 90
+        },
+        "baro_altitude": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "on_ground": {
+          "type": "boolean"
+        },
+        "velocity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "true_track": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 360
+        },
+        "vertical_rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "geo_altitude": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "squawk": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spi": {
+          "type": "boolean"
+        },
+        "position_source": {
+          "enum": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "snapshot_time": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Unix seconds of the /states/all snapshot that contained this vector."
+        }
+      }
+    }
+  }
+}
