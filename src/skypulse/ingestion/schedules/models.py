@@ -96,13 +96,11 @@ class FlightSchedule:
             }
         )
 
-    def scheduled_time_at(self, airport: AirportIcao) -> datetime | None:
-        """Scheduled time of this flight's movement at the given airport."""
-        field = "scheduled_departure_utc"
-        if self.data["origin_icao"] != str(airport):
-            field = "scheduled_arrival_utc"
-        value = self.data[field]
-        return datetime.fromisoformat(value) if value else None
+    def times_at(self, airport: AirportIcao) -> list[datetime]:
+        """Scheduled, revised and runway times of this flight's movement at the airport."""
+        movement = "departure" if self.data["origin_icao"] == str(airport) else "arrival"
+        fields = (f"scheduled_{movement}_utc", f"revised_{movement}_utc", f"runway_{movement}_utc")
+        return [datetime.fromisoformat(self.data[name]) for name in fields if self.data[name]]
 
     def natural_key(self) -> str:
         mutable = json.dumps([self.data[name] for name in MUTABLE_FIELDS])
@@ -142,7 +140,9 @@ class ScheduleBatch:
 
     def within(self, window: TimeWindow, airport: AirportIcao) -> "ScheduleBatch":
         kept = tuple(
-            flight for flight in self.flights if window.contains(flight.scheduled_time_at(airport))
+            flight
+            for flight in self.flights
+            if any(window.contains(instant) for instant in flight.times_at(airport))
         )
         return ScheduleBatch(kept, self.skipped)
 
