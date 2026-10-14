@@ -31,3 +31,22 @@ Known shortcuts, kept visible on purpose. Each item says why it exists and what 
 - **Effect:** a carrier missing from the list has no country, so arrivals into the EU261
   area on that carrier are treated as not covered.
 - **Done when:** airlines come from a maintained source loaded by `skypulse.batch reference`.
+
+## TD-003: Replace synthetic schedules with real data
+
+- **Raised:** 2026-10-14, during M5
+- **Why it exists:** scheduled versus actual times come from AeroDataBox, which needs a paid
+  key, so the published site and the demo run on a seeded synthetic schedule day. Aircraft
+  positions and METAR reports are already real recordings.
+- **Effect:** delays, claims and EU261 amounts on the site are illustrative, not measured.
+- **Path to real data:**
+  1. Subscribe to AeroDataBox (RapidAPI) and run the schedules feed live for the monitored
+     airports; the `AeroDataBoxProvider` and parser already exist.
+  2. Register an OpenSky account (OAuth2 client) and enable the observed-flights batch
+     (`/flights/departure|arrival`), an independent actual-time source to cross-check the
+     schedule provider.
+  3. Record continuously (scheduled ingestion to the lake) instead of one replay day, so
+     the gold layer accumulates weeks of history and the insights show trends.
+  4. Publish the site from that history, keeping the fixture build for CI.
+- **Done when:** the published insights are built from recorded real schedules over a
+  rolling window, and the synthetic generator is used only by tests.
