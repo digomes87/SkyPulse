@@ -32,5 +32,6 @@ def configure_logging(level: LogLevel) -> None:
 
 
 def get_logger(name: str) -> structlog.typing.FilteringBoundLogger:
-    logger: structlog.typing.FilteringBoundLogger = structlog.get_logger().bind(logger=name)
+    """Lazy logger: safe to create at import time, binds to the configuration on first use."""
+    logger: structlog.typing.FilteringBoundLogger = structlog.get_logger(component=name)
     return logger

@@ -1,6 +1,7 @@
 import json
 
 import pytest
+import structlog
 
 from skypulse.common.correlation import CorrelationId, correlation_scope, current_correlation_id
 from skypulse.common.logging import configure_logging, get_logger
@@ -49,7 +50,7 @@ def test_log_lines_are_json_with_level_logger_and_event(
     line = last_json_line(capsys.readouterr().out)
     assert line["event"] == "flight_detected"
     assert line["level"] == "info"
-    assert line["logger"] == "skypulse.test"
+    assert line["component"] == "skypulse.test"
     assert line["icao24"] == "4ca7b5"
     assert "timestamp" in line
 
@@ -71,3 +72,15 @@ def test_log_lines_below_the_configured_level_are_dropped(
     get_logger("skypulse.test").info("too_chatty")
 
     assert capsys.readouterr().out == ""
+
+
+def test_loggers_created_before_configuration_still_emit_json(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    structlog.reset_defaults()
+    early = get_logger("skypulse.early")
+
+    configure_logging("INFO")
+    early.info("module_level_logger")
+
+    assert last_json_line(capsys.readouterr().out)["component"] == "skypulse.early"

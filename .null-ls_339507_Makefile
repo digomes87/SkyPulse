@@ -1,0 +1,60 @@
+.DEFAULT_GOAL := help
+SHELL := /bin/bash
+
+COMPOSE := docker compose
+
+.PHONY: help install lint fmt typecheck test test-integration ci up down logs ps clean demo
+
+help: ## List available targets
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+install: ## Install dependencies and git hooks
+	uv sync --all-extras
+	uv run pre-commit install
+
+lint: ## Lint and check formatting
+	uv run ruff check .
+	uv run ruff format --check .
+
+fmt: ## Format code and apply safe lint fixes
+	uv run ruff check --fix .
+	uv run ruff format .
+
+typecheck: ## Static type check
+	uv run mypy src tests
+
+test: ## Unit tests with coverage
+	uv run pytest --cov --cov-report=term --cov-report=xml
+
+test-integration: ## Integration tests against the running stack (make up first)
+	uv run pytest -m integration
+
+ci: lint typecheck test ## Everything CI runs before integration tests
+
+up: ## Start the local stack and wait until it is healthy
+	$(COMPOSE) up -d --wait kafka localstack
+	$(COMPOSE) run --rm kafka-init
+
+down: ## Stop the local stack
+	$(COMPOSE) down
+
+logs: ## Follow logs of the local stack
+	$(COMPOSE) logs -f
+
+ps: ## Show stack status
+	$(COMPOSE) ps
+
+clean: ## Stop the stack and drop its volumes
+	$(COMPOSE) down -v --remove-orphans
+
+PIPELINE := $(COMPOSE) --profile pipeline
+DEMO_SPEED := 720
+
+demo: up ## Replay one day through ingestion, bronze and silver, then summarise the lake
+	$(PIPELINE) build
+	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_START=2026-10-14T10:30:00Z producer-states states --cycles 1
+	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_SPEED=$(DEMO_SPEED) producer-schedules schedules --cycles 19 --interval 5
+	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_START=2026-10-14T23:00:00Z producer-metar metar --cycles 1
+	$(PIPELINE) run --rm spark-bronze bronze --available-now --master "local[2]"
+	$(PIPELINE) run --rm spark-silver silver --available-now --master "local[2]"
+	$(PIPELINE) run --rm --entrypoint python spark-silver -m skypulse.streaming.summary
