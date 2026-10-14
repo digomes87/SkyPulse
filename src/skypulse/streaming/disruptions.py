@@ -161,3 +161,30 @@ def not_yet_announced(candidates: DataFrame, announced: DataFrame | None) -> Dat
     if announced is None:
         return unique
     return unique.join(announced.select(*NATURAL_KEY), list(NATURAL_KEY), "left_anti")
+
+
+EVENT_FIELDS = (
+    "flight_number",
+    "airline_icao",
+    "airline_country",
+    "origin",
+    "destination",
+    "scheduled_departure_utc",
+    "scheduled_arrival_utc",
+    "actual_departure_utc",
+    "actual_arrival_utc",
+    "kind",
+    "status",
+    "departure_delay_minutes",
+    "arrival_delay_minutes",
+    "detected_at",
+    "origin_weather",
+    "destination_weather",
+)
+JSON_OPTIONS = {"timestampFormat": "yyyy-MM-dd'T'HH:mm:ss'Z'", "ignoreNullFields": "false"}
+
+
+def as_payloads(enriched: DataFrame) -> DataFrame:
+    """The contract's ``data`` object as JSON text, rendered by Spark in UTC."""
+    payload = functions.to_json(functions.struct(*EVENT_FIELDS), JSON_OPTIONS)
+    return enriched.select(*NATURAL_KEY, "correlation_id", payload.alias("payload"))
