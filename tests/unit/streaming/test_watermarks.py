@@ -10,6 +10,7 @@ from skypulse.common.config import Settings
 from skypulse.streaming.bronze import bronze_path, to_bronze
 from skypulse.streaming.jobs import start_quarantine, start_silver
 from skypulse.streaming.silver import SILVER_TABLES, quarantine_path, silver_path
+from skypulse.streaming.summary import table_counts
 from skypulse.streaming.triggers import Trigger
 from tests.unit.streaming.events import BASE, aircraft_state
 from tests.unit.streaming.kafka_rows import kafka_frame
@@ -88,3 +89,14 @@ def test_invalid_rows_land_in_quarantine(spark: SparkSession, settings: Settings
 
     rows = spark.read.format("delta").load(quarantine_path(settings)).collect()
     assert [row["silver_table"] for row in rows] == ["aircraft_states"]
+
+
+def test_summary_counts_each_table(spark: SparkSession, settings: Settings) -> None:
+    land_in_bronze(spark, settings, [aircraft_state("aaaaaa", BASE)])
+    run_silver(spark, settings)
+
+    counts = table_counts(spark, settings)
+
+    assert counts["bronze.raw_events"] == 1
+    assert counts["silver.aircraft_states"] == 1
+    assert counts["silver.metar_observations"] == 0
