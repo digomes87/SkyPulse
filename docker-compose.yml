@@ -59,3 +59,41 @@ services:
       interval: 5s
       timeout: 10s
       retries: 24
+
+  # --- pipeline (profile "pipeline"): replay producers and streaming jobs -----------------
+
+  producer-states: &producer
+    profiles: ["pipeline"]
+    build: { context: ., target: producer }
+    image: skypulse-producer:local
+    depends_on:
+      kafka: { condition: service_healthy }
+    environment: &pipeline-env
+      SKYPULSE_INGESTION__REPLAY: "true"
+      SKYPULSE_KAFKA__BOOTSTRAP_SERVERS: kafka:19092
+      SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    command: ["states"]
+
+  producer-schedules:
+    <<: *producer
+    command: ["schedules"]
+
+  producer-metar:
+    <<: *producer
+    command: ["metar"]
+
+  spark-bronze: &spark
+    profiles: ["pipeline"]
+    build: { context: ., target: spark }
+    image: skypulse-spark:local
+    depends_on:
+      kafka: { condition: service_healthy }
+      localstack: { condition: service_healthy }
+    environment: *pipeline-env
+    command: ["bronze", "--master", "local[2]"]
+
+  spark-silver:
+    <<: *spark
+    command: ["silver", "--master", "local[2]"]
