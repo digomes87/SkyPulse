@@ -29,6 +29,7 @@ class EventType(StrEnum):
     OBSERVED_FLIGHT = "observed_flight"
     FLIGHT_SCHEDULE = "flight_schedule"
     METAR_OBSERVATION = "metar_observation"
+    FLIGHT_DISRUPTION = "flight_disruption"
 
     @property
     def contract_file(self) -> str:
@@ -40,6 +41,7 @@ class EventSource(StrEnum):
     AERODATABOX = "aerodatabox"
     AVIATIONWEATHER = "aviationweather"
     REPLAY = "replay"
+    DETECTOR = "skypulse-detector"
 
 
 class ContractViolationError(ValueError):
