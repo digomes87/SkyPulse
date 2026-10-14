@@ -23,7 +23,7 @@ The mode is chosen with `SKYPULSE_RUN_MODE`. All settings are read by
 |--------|----------------|
 | `config` | Typed, immutable settings; lake bucket naming per layer |
 | `correlation` | `CorrelationId` value type and a context-scoped current id |
-| `logging` | JSON logs to stdout with level, logger, UTC timestamp and correlation id |
+| `logging` | JSON logs to stdout with level, component, UTC timestamp and correlation id |
 | `streams` | `Topic`, `PartitionKey`, `StreamRecord`, the `StreamSink` / `StreamSource` protocols and an in-memory implementation |
 
 ### Correlation ids

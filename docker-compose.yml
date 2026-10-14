@@ -2,6 +2,28 @@ name: skypulse
 
 # Local mode stack. Later milestones add Spark, Airflow, MLflow and observability services.
 
+x-pipeline-env: &pipeline-env
+  SKYPULSE_INGESTION__REPLAY: "true"
+  SKYPULSE_KAFKA__BOOTSTRAP_SERVERS: kafka:19092
+  SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+
+x-producer: &producer
+  profiles: ["pipeline"]
+  image: skypulse-producer:local
+  depends_on:
+    kafka: { condition: service_healthy }
+  environment: *pipeline-env
+
+x-spark: &spark
+  profiles: ["pipeline"]
+  image: skypulse-spark:local
+  depends_on:
+    kafka: { condition: service_healthy }
+    localstack: { condition: service_healthy }
+  environment: *pipeline-env
+
 services:
   kafka:
     image: apache/kafka:4.1.0
@@ -61,19 +83,11 @@ services:
       retries: 24
 
   # --- pipeline (profile "pipeline"): replay producers and streaming jobs -----------------
+  # Only one service per image builds it; the others reuse the tag.
 
-  producer-states: &producer
-    profiles: ["pipeline"]
+  producer-states:
+    <<: *producer
     build: { context: ., target: producer }
-    image: skypulse-producer:local
-    depends_on:
-      kafka: { condition: service_healthy }
-    environment: &pipeline-env
-      SKYPULSE_INGESTION__REPLAY: "true"
-      SKYPULSE_KAFKA__BOOTSTRAP_SERVERS: kafka:19092
-      SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
     command: ["states"]
 
   producer-schedules:
@@ -84,14 +98,9 @@ services:
     <<: *producer
     command: ["metar"]
 
-  spark-bronze: &spark
-    profiles: ["pipeline"]
+  spark-bronze:
+    <<: *spark
     build: { context: ., target: spark }
-    image: skypulse-spark:local
-    depends_on:
-      kafka: { condition: service_healthy }
-      localstack: { condition: service_healthy }
-    environment: *pipeline-env
     command: ["bronze", "--master", "local[2]"]
 
   spark-silver:
