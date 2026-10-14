@@ -1,0 +1,13 @@
+[
+  {"icao": "EIDW", "iata": "DUB", "name": "Dublin", "country": "IE", "latitude": 53.4213, "longitude": -6.2701},
+  {"icao": "EGSS", "iata": "STN", "name": "London Stansted", "country": "GB", "latitude": 51.885, "longitude": 0.235},
+  {"icao": "EGLL", "iata": "LHR", "name": "London Heathrow", "country": "GB", "latitude": 51.4706, "longitude": -0.4619},
+  {"icao": "LEMD", "iata": "MAD", "name": "Madrid Barajas", "country": "ES", "latitude": 40.4719, "longitude": -3.5626},
+  {"icao": "LEPA", "iata": "PMI", "name": "Palma de Mallorca", "country": "ES", "latitude": 39.5517, "longitude": 2.7388},
+  {"icao": "LIRF", "iata": "FCO", "name": "Rome Fiumicino", "country": "IT", "latitude": 41.8003, "longitude": 12.2389},
+  {"icao": "LFPG", "iata": "CDG", "name": "Paris Charles de Gaulle", "country": "FR", "latitude": 49.0097, "longitude": 2.5479},
+  {"icao": "EDDF", "iata": "FRA", "name": "Frankfurt", "country": "DE", "latitude": 50.0379, "longitude": 8.5622},
+  {"icao": "EHAM", "iata": "AMS", "name": "Amsterdam Schiphol", "country": "NL", "latitude": 52.3105, "longitude": 4.7683},
+  {"icao": "LPPT", "iata": "LIS", "name": "Lisbon", "country": "PT", "latitude": 38.7742, "longitude": -9.1342},
+  {"icao": "KJFK", "iata": "JFK", "name": "New York JFK", "country": "US", "latitude": 40.6413, "longitude": -73.7781}
+]
