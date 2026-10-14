@@ -1,6 +1,9 @@
 # SkyPulse
 
 [![CI](https://github.com/digomes87/SkyPulse/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/digomes87/SkyPulse/actions/workflows/ci.yml)
+[![Pages](https://github.com/digomes87/SkyPulse/actions/workflows/pages.yml/badge.svg)](https://digomes87.github.io/SkyPulse/)
+
+**Live site:** [digomes87.github.io/SkyPulse](https://digomes87.github.io/SkyPulse/) · [Insights](https://digomes87.github.io/SkyPulse/insights/) · [dbt docs](https://digomes87.github.io/SkyPulse/dbt/)
 
 **Real-time flight disruption and EU261 exposure platform for European air traffic.**
 
@@ -148,8 +151,16 @@ make demo   # replays 05:00-23:00Z at 720x through ingestion, bronze, silver and
 make claims # list the claims in DynamoDB again
 ```
 
-`make help` lists every target. Gold tables join `make demo` in M5; see the
-[roadmap](#roadmap).
+Build the gold layer and the site locally (no containers for Spark or dbt):
+
+```bash
+make lake        # replayed day -> bronze -> silver -> detector -> EU261 assessments in data/lake
+make dbt-build   # gold models and their tests on DuckDB
+make dbt-docs site
+open public/index.html
+```
+
+`make help` lists every target.
 
 ## Planned tech stack
 
@@ -199,7 +210,7 @@ tests/                unit and integration tests
 | M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Done |
 | M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Done |
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Done |
-| M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Planned |
+| M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | In progress: reference data, batch jobs, dbt and the site are done; Airflow next |
 | M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Planned |
 | M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Planned |
 | M8 AWS + Databricks | Terraform modules, Kinesis mode, Glue/Athena, cost doc | Planned |
