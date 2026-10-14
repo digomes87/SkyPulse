@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
-from skypulse.common.clock import FrozenClock, SystemClock, from_unix, utc_iso
+from skypulse.common.clock import FrozenClock, ReplayClock, SystemClock, from_unix, utc_iso
 
 
 def test_utc_iso_normalises_offsets_to_z() -> None:
@@ -30,3 +30,12 @@ def test_frozen_clock_returns_the_same_instant() -> None:
 
 def test_system_clock_is_timezone_aware() -> None:
     assert SystemClock().now().tzinfo is not None
+
+
+def test_replay_clock_runs_faster_than_real_time() -> None:
+    ticks = iter([100.0, 110.0])
+    start = datetime(2026, 10, 14, 6, 0, tzinfo=UTC)
+
+    clock = ReplayClock(start, speed=60, monotonic=lambda: next(ticks))
+
+    assert clock.now() == start + timedelta(minutes=10)

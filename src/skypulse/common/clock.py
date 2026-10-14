@@ -1,6 +1,8 @@
 """Time helpers. Components receive a Clock so tests can freeze time."""
 
-from datetime import UTC, datetime
+import time
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 
@@ -34,3 +36,19 @@ def utc_iso(instant: datetime) -> str:
 
 def from_unix(seconds: int) -> datetime:
     return datetime.fromtimestamp(seconds, UTC)
+
+
+class ReplayClock:
+    """Starts at a fixed instant and advances ``speed`` times faster than real time."""
+
+    def __init__(
+        self, start: datetime, speed: float, monotonic: Callable[[], float] = time.monotonic
+    ) -> None:
+        self._start = require_aware(start)
+        self._speed = speed
+        self._monotonic = monotonic
+        self._origin = monotonic()
+
+    def now(self) -> datetime:
+        elapsed = self._monotonic() - self._origin
+        return self._start + timedelta(seconds=elapsed * self._speed)
