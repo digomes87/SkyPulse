@@ -96,3 +96,32 @@ Run with `python -m skypulse.streaming bronze|silver [--available-now]`. In cont
 `spark` image already holds the Delta, Kafka and S3A packages. Design choices are recorded
 in [ADR 0002](decisions/0002-delta-lake-medallion.md) (Delta, medallion) and
 [ADR 0003](decisions/0003-idempotency-and-deduplication.md) (idempotency, watermarks).
+
+## Disruptions and EU261 claims
+
+```
+silver/flight_schedules ──change data feed──> detector (Spark)
+     classify -> enrich (airports, airlines, METAR ±1 h) -> drop already announced
+     -> validate contract -> SNS flight-disruptions -> record in silver/flight_disruptions
+                                   │
+         ┌─────────────────────────┴──────────────────────────┐
+  SQS eu261-calculator (filter: kind in              SQS notifications
+  arrival_delay, cancellation)                              │
+         │  DLQ after 3 receives                             │  DLQ after 3 receives
+  Lambda eu261-calculator                            Lambda notifier
+   skypulse.eu261.assess -> DynamoDB eu261-claims     JSON log + optional webhook
+   (conditional on detected_at)
+```
+
+| Piece | Module |
+|-------|--------|
+| Rules | `skypulse.eu261` (pure, stdlib only; [ADR 0005](decisions/0005-eu261-rules-engine.md)) |
+| Detector | `skypulse.streaming.disruptions`, `detector`, `announcements` |
+| Lambdas | `skypulse.lambdas.eu261_calculator`, `notifier` |
+| Packaging and local deploy | `skypulse.deployment.lambdas` (`make lambdas`) |
+| Reference data | `skypulse.reference` (curated now, OurAirports in M5) |
+| Operations | [runbooks/sqs-dead-letter-redrive.md](runbooks/sqs-dead-letter-redrive.md) |
+
+Delivery is at-least-once end to end. Idempotency comes from the detector's record of
+announced `(flight, scheduled departure, kind)` and the calculator's conditional write:
+a claim is only replaced by a version detected later.

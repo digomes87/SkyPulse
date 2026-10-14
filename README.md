@@ -128,6 +128,7 @@ make down
 | Service | URL |
 |---------|-----|
 | Kafka (from the host) | `localhost:9092` |
+| DynamoDB claims (via LocalStack) | `make claims` |
 | LocalStack (AWS APIs) | `http://localhost:4566` |
 
 Run the producers against recorded fixtures (no API keys needed):
@@ -142,11 +143,13 @@ uv run python -m skypulse.ingestion metar --cycles 1
 Or replay a whole synthetic day through ingestion, bronze and silver in containers:
 
 ```bash
-make demo   # builds the images, replays 05:00-23:00Z at 720x, prints row counts per table
+make demo   # replays 05:00-23:00Z at 720x through ingestion, bronze, silver and the
+            # disruption detector, deploys the Lambdas and prints the EU261 claims
+make claims # list the claims in DynamoDB again
 ```
 
-`make help` lists every target. Gold tables and EU261 claims join `make demo` in the next
-milestones; see the [roadmap](#roadmap).
+`make help` lists every target. Gold tables join `make demo` in M5; see the
+[roadmap](#roadmap).
 
 ## Planned tech stack
 
@@ -195,7 +198,7 @@ tests/                unit and integration tests
 | M1 Foundation | Repo skeleton, tooling, CI, docker-compose (Kafka + LocalStack), config and logging | Done |
 | M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Done |
 | M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Done |
-| M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Planned |
+| M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Done |
 | M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Planned |
 | M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Planned |
 | M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Planned |
