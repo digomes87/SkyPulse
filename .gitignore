@@ -40,3 +40,4 @@ dbt/logs/
 *.tfstate
 *.tfstate.*
 *.tfplan
+public/

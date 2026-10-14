@@ -27,3 +27,9 @@ def test_aws_mode_uses_the_default_s3a_chain(monkeypatch: pytest.MonkeyPatch) ->
 def test_session_has_delta_and_utc(spark: SparkSession) -> None:
     assert spark.conf.get("spark.sql.session.timeZone") == "UTC"
     assert "DeltaSparkSessionExtension" in str(spark.conf.get("spark.sql.extensions"))
+
+
+def test_driver_memory_is_configurable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SKYPULSE_SPARK__DRIVER_MEMORY", "3g")
+
+    assert Settings().spark.driver_memory == "3g"

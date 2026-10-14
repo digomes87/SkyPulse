@@ -1,0 +1,49 @@
+{% extends "base.html.j2" %}
+{% set page = "overview" %}
+{% block title %}SkyPulse · Flight disruption and EU261 exposure{% endblock %}
+{% block content %}
+<section class="hero" aria-labelledby="hero-heading">
+  <p class="eyebrow mono">EIDW · EGLL · LFPG · LEMD · LEPA · KJFK</p>
+  <h1 id="hero-heading">What do Europe's flight delays cost under EU261?</h1>
+  <p class="lede">SkyPulse ingests live aircraft positions, schedules and airport weather, detects delayed
+     and cancelled flights as they happen, and prices each one against EU Regulation 261/2004,
+     flagging the ones bad weather would likely exempt.</p>
+  <div class="hero-figure">
+    <span class="hero-value">{{ gold.headline.expected_payout_eur | euros }}</span>
+    <span class="hero-caption">expected compensation on the replayed day, after setting aside
+      {{ gold.headline.likely_exempt_eur | euros }} likely exempt for weather</span>
+  </div>
+  <p class="cta"><a class="button" href="insights/index.html">See the insights</a>
+     <a class="button ghost" href="dbt/index.html">Browse the gold models</a></p>
+</section>
+
+<section class="tiles" aria-label="The replayed day in numbers">
+  <div class="tile"><span class="tile-label">Flights scheduled</span><span class="tile-value">{{ gold.headline.flights }}</span></div>
+  <div class="tile"><span class="tile-label">Disrupted</span><span class="tile-value">{{ gold.headline.disrupted }}</span></div>
+  <div class="tile"><span class="tile-label">EU261-eligible claims</span><span class="tile-value">{{ gold.headline.eligible_claims }}</span></div>
+  <div class="tile"><span class="tile-label">Gross exposure</span><span class="tile-value">{{ gold.headline.gross_exposure_eur | euros }}</span></div>
+  <div class="tile"><span class="tile-label">Aircraft tracked</span><span class="tile-value">{{ "{:,}".format(gold.headline.aircraft_tracked) }}</span></div>
+</section>
+
+<section class="pipeline" aria-labelledby="pipeline-heading">
+  <h2 id="pipeline-heading">From transponder to claim</h2>
+  <ol class="flow">
+    <li><span class="step mono">01</span><h3>Ingest</h3><p>Async producers poll OpenSky, AeroDataBox and aviationweather.gov, validate every event against a JSON Schema contract and publish to Kafka (Kinesis on AWS).</p></li>
+    <li><span class="step mono">02</span><h3>Land</h3><p>Spark Structured Streaming appends every record to a bronze Delta table, then types, deduplicates within a watermark and MERGEs into silver.</p></li>
+    <li><span class="step mono">03</span><h3>Detect</h3><p>A change-feed job spots cancellations and late flights, enriches them with airport, runway and METAR data and announces them on SNS.</p></li>
+    <li><span class="step mono">04</span><h3>Price</h3><p>A Lambda applies a pure EU261 rules engine and writes the claim to DynamoDB. The same engine recomputes history in batch.</p></li>
+    <li><span class="step mono">05</span><h3>Model</h3><p>dbt builds dimensions, facts and aggregates with 60+ tests; this site and the model docs are rebuilt from them on every release.</p></li>
+  </ol>
+</section>
+
+<section class="principles" aria-labelledby="principles-heading">
+  <h2 id="principles-heading">Engineering choices</h2>
+  <dl class="grid">
+    <div><dt>Runs offline</dt><dd>Recorded API responses replay through the production clients, so the whole platform runs on a laptop and in CI with no keys.</dd></div>
+    <div><dt>Effectively once</dt><dd>Deterministic event ids, an idempotent Kafka producer, watermark dedup and MERGE on natural keys. Replays never double-count.</dd></div>
+    <div><dt>Contracts first</dt><dd>One JSON Schema per event drives producer validation, the silver Spark schemas and these docs.</dd></div>
+    <div><dt>Rules as a library</dt><dd>EU261 is a pure, property-tested Python module shared by the Lambda and the batch recomputation.</dd></div>
+  </dl>
+  <p><a href="{{ repository }}/tree/main/docs/decisions">Read the decision records →</a></p>
+</section>
+{% endblock %}

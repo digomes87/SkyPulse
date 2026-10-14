@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_flight_schedules
+    description: One row per flight (flight number + scheduled departure), latest observed version.
+    columns:
+      - name: flight_key
+        data_tests: [unique, not_null]
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Unknown, Expected, EnRoute, CheckIn, Boarding, GateClosed, Departed,
+                         Delayed, Approaching, Arrived, Canceled, Diverted, CanceledUncertain]
+  - name: stg_aircraft_states
+    description: State vectors with a position, timestamps converted from Unix seconds.
+  - name: stg_metar_observations
+    description: METAR and SPECI reports.
+  - name: stg_eu261_assessments
+    description: EU261 assessments per flight from the batch recomputation.
+    columns:
+      - name: claim_id
+        data_tests: [unique, not_null]
+  - name: stg_reference_airports
+    description: OurAirports airports with the number of open runways.
+    columns:
+      - name: airport_icao
+        data_tests: [unique, not_null]
+  - name: stg_reference_countries
+    description: Countries and whether EU261 applies to departures from them.
+  - name: stg_reference_airlines
+    description: Airlines known to SkyPulse.

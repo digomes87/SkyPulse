@@ -1,7 +1,14 @@
 import pytest
 from pyspark.sql import SparkSession
 
-from skypulse.streaming.disruptions import classify, enrich, not_yet_announced
+from skypulse.streaming.announcements import Announcement
+from skypulse.streaming.disruptions import (
+    AIRPORT_REFERENCE_SCHEMA,
+    as_payloads,
+    classify,
+    enrich,
+    not_yet_announced,
+)
 from tests.unit.streaming.schedule_rows import at, metar, schedule, schedules
 
 pytestmark = pytest.mark.spark
@@ -81,3 +88,25 @@ def test_only_new_disruptions_are_announced(spark: SparkSession) -> None:
 
     assert [row["flight_number"] for row in fresh.collect()] == ["FR9"]
     assert not_yet_announced(candidates, None).count() == 2
+
+
+def test_unknown_airports_still_produce_contract_valid_events(spark: SparkSession) -> None:
+    classified = classify(schedules(spark, schedule("XX1", "Canceled", route=("EIDW", "ZZZZ"))))
+    row = as_payloads(enrich(classified, metar(spark))).first()
+
+    assert row is not None
+    announcement = Announcement.from_payload(row["payload"], None)
+    assert announcement.event.data["destination"]["runway_headings"] == []
+
+
+def test_loaded_reference_brings_runway_headings(spark: SparkSession) -> None:
+    loaded = spark.createDataFrame(
+        [("LEPA", "ES", 39.55, 2.74, [59, 239]), ("EGSS", "GB", 51.88, 0.23, [44])],
+        AIRPORT_REFERENCE_SCHEMA,
+    )
+    classified = classify(schedules(spark, schedule("FR6403", "Canceled", route=("LEPA", "EGSS"))))
+
+    row = enrich(classified, metar(spark), loaded).first()
+
+    assert row is not None
+    assert row["origin"]["runway_headings"] == [59, 239]

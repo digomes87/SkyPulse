@@ -3,13 +3,13 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
+.PHONY: lake dbt-build dbt-docs site help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install dependencies and git hooks
-	uv sync --all-extras
+	uv sync --all-extras --all-groups
 	uv run pre-commit install
 
 lint: ## Lint and check formatting
@@ -71,3 +71,30 @@ claims: ## List EU261 claims stored in DynamoDB (LocalStack)
 	$(COMPOSE) exec -T localstack awslocal dynamodb scan --table-name eu261-claims \
 		--query 'Items[].[flight_number.S, kind.S, verdict.S, amount_eur.N, extraordinary_circumstances_likely.BOOL]' \
 		--output table
+
+LAKE_ROOT := $(CURDIR)/data/lake
+LAKE_ENV := SKYPULSE_LAKE__ROOT_URI=file://$(LAKE_ROOT) SKYPULSE_INGESTION__REPLAY=true \
+	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test
+SPARK_LOCAL := --master "local[2]"
+
+lake: up ## Build a local lake in data/lake from the replay fixtures (no containers)
+	$(LAKE_ENV) uv run python -m skypulse.batch reference $(SPARK_LOCAL)
+	$(LAKE_ENV) SKYPULSE_INGESTION__REPLAY_START=2026-10-14T10:30:00Z uv run python -m skypulse.ingestion states --cycles 1
+	$(LAKE_ENV) SKYPULSE_INGESTION__REPLAY_SPEED=7200 uv run python -m skypulse.ingestion schedules --cycles 10 --interval 1
+	$(LAKE_ENV) SKYPULSE_INGESTION__REPLAY_START=2026-10-14T23:00:00Z uv run python -m skypulse.ingestion metar --cycles 1
+	$(LAKE_ENV) uv run python -m skypulse.streaming bronze --available-now $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.streaming silver --available-now $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.streaming detector --available-now $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.batch assessments $(SPARK_LOCAL)
+
+DBT := cd dbt && SKYPULSE_SILVER_ROOT=$(LAKE_ROOT)/silver uv run dbt
+
+dbt-build: ## Build and test the gold models on the local lake
+	$(DBT) deps
+	$(DBT) build
+
+dbt-docs: ## Generate dbt docs into dbt/target
+	$(DBT) docs generate
+
+site: ## Build the static site (landing, insights, dbt docs) into public/
+	uv run python -m skypulse.site.build --gold dbt/target/skypulse.duckdb --dbt-target dbt/target --out public

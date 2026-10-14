@@ -125,3 +125,22 @@ silver/flight_schedules ──change data feed──> detector (Spark)
 Delivery is at-least-once end to end. Idempotency comes from the detector's record of
 announced `(flight, scheduled departure, kind)` and the calculator's conditional write:
 a claim is only replaced by a version detected later.
+
+## Batch jobs (`skypulse.batch`)
+
+`python -m skypulse.batch reference|assessments|maintenance`, scheduled by Airflow.
+
+| Job | Reads | Writes | Notes |
+|-----|-------|--------|-------|
+| `reference` | OurAirports CSVs (fixtures in replay mode), curated airlines | `silver/reference_airports` (with runway headings), `reference_countries`, `reference_airlines` | Overwrite; the detector uses the runway headings for crosswind |
+| `assessments` | `silver/flight_disruptions` | `silver/eu261_assessments` | Maps the pure `skypulse.eu261` function over every disruption; a full recompute, so rule changes reach history |
+| `maintenance` | silver and bronze tables | same | OPTIMIZE with Z-order on query keys, VACUUM 7 days |
+
+## Gold layer (`dbt/`)
+
+dbt on DuckDB reads the silver Delta tables in place (`delta_scan`) for local runs and CI;
+cross-database macros keep the SQL portable to Databricks. Staging views, dimensions
+(`dim_airport`, `dim_airline`, `dim_route`, `dim_date`), facts (`fct_flight`,
+`fct_eu261_claim`) and aggregates (`agg_airport_daily_delays`, `agg_route_otp`,
+`agg_eu261_exposure_by_airline`), with 58 tests. `make lake && make dbt-build` builds it
+locally; CI does the same in the `gold` job.

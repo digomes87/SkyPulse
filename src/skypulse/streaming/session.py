@@ -51,6 +51,7 @@ def build_session(
         )
         .config("spark.sql.session.timeZone", "UTC")
         .config("spark.sql.shuffle.partitions", "4")
+        .config("spark.driver.memory", settings.spark.driver_memory)
         .config("spark.ui.showConsoleProgress", "false")
         # Silver tables feed the disruption detector through their change data feed.
         .config("spark.databricks.delta.properties.defaults.enableChangeDataFeed", "true")

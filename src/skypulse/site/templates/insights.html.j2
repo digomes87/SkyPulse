@@ -1,0 +1,87 @@
+{% extends "base.html.j2" %}
+{% set page = "insights" %}
+{% block title %}SkyPulse · Insights from the gold layer{% endblock %}
+{% macro legend(series) -%}
+<ul class="legend">
+  {% for item in series %}<li><span class="swatch swatch-{{ item.css_variable[2:] }}"></span>{{ item.name }}</li>{% endfor %}
+</ul>
+{%- endmacro %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow mono">GOLD LAYER · REPLAYED DAY 2026-10-14</p>
+  <h1>Which airports and routes delay the most, and what does it cost?</h1>
+  <p class="lede">Every chart below is computed by the dbt models from the replayed day. Hover a bar for
+     details, or open the table under each chart.</p>
+</section>
+
+<article class="figure" aria-labelledby="exposure-heading">
+  <header>
+    <h2 id="exposure-heading">EU261 exposure by airline</h2>
+    <p>Compensation owed for eligible disruptions, split into what the airline should expect to pay
+       and what severe weather at the airport would likely exempt.</p>
+  </header>
+  {{ legend(series.exposure) }}
+  <div class="chart-scroll">{{ charts.exposure | safe }}</div>
+  <details><summary>Show table</summary>
+    <table><thead><tr><th>Airline</th><th class="num">Flights</th><th class="num">Expected payout</th><th class="num">Likely exempt</th></tr></thead>
+    <tbody>{% for row in gold.airlines %}<tr><td>{{ row.airline_name }} <span class="mono muted">{{ row.airline_icao }}</span></td><td class="num">{{ row.flights }}</td><td class="num">{{ row.expected_payout_eur | euros }}</td><td class="num">{{ row.likely_exempt_eur | euros }}</td></tr>{% endfor %}</tbody></table>
+  </details>
+</article>
+
+<article class="figure" aria-labelledby="airports-heading">
+  <header>
+    <h2 id="airports-heading">Where departures run late</h2>
+    <p>Average departure delay per airport, measured from runway (or revised) time against the schedule.</p>
+  </header>
+  <div class="chart-scroll">{{ charts.airports | safe }}</div>
+  <details><summary>Show table</summary>
+    <table><thead><tr><th>Airport</th><th class="num">Departures</th><th class="num">Avg delay (min)</th><th class="num">On-time arrivals</th></tr></thead>
+    <tbody>{% for row in gold.airports %}<tr><td><span class="mono">{{ row.airport_icao }}</span> {{ row.airport_name }}</td><td class="num">{{ row.departures }}</td><td class="num">{{ "%.0f" | format(row.avg_departure_delay_minutes) }}</td><td class="num">{% if row.on_time_rate is not none %}{{ "%.0f%%" | format(row.on_time_rate * 100) }}{% else %}–{% endif %}</td></tr>{% endfor %}</tbody></table>
+  </details>
+</article>
+
+<article class="figure" aria-labelledby="bands-heading">
+  <header>
+    <h2 id="bands-heading">How late flights land</h2>
+    <p>Flights by arrival delay. Only the three-hour band and cancellations can create an EU261 claim.</p>
+  </header>
+  <div class="chart-scroll">{{ charts.bands | safe }}</div>
+  <details><summary>Show table</summary>
+    <table><thead><tr><th>Arrival delay</th><th class="num">Flights</th></tr></thead>
+    <tbody>{% for row in gold.delay_bands %}<tr><td>{{ band_labels[row.band] }}</td><td class="num">{{ row.flights }}</td></tr>{% endfor %}</tbody></table>
+  </details>
+</article>
+
+<article class="figure" aria-labelledby="claims-heading">
+  <header>
+    <h2 id="claims-heading">The claims behind the numbers</h2>
+    <p>Eligible disruptions and those flagged for severe weather. The weather flag is an analytical signal, not a legal decision.</p>
+  </header>
+  <table class="claims">
+    <thead><tr><th>Flight</th><th>Route</th><th>Disruption</th><th class="num">Arrival delay</th><th class="num">Amount</th><th>Weather flag</th></tr></thead>
+    <tbody>{% for claim in gold.claims %}
+      <tr><td class="mono">{{ claim.flight_number }}</td><td class="mono">{{ claim.route }}</td>
+          <td>{{ claim.disruption_kind | replace("_", " ") }}</td>
+          <td class="num">{% if claim.arrival_delay_minutes is not none %}{{ claim.arrival_delay_minutes }} min{% else %}–{% endif %}</td>
+          <td class="num">{{ claim.amount_eur | euros }}</td>
+          <td>{% if claim.severe_weather %}<span class="flag">⚑ {{ claim.severe_weather | replace("_", " ") }}</span>{% else %}<span class="muted">none</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  <aside class="note">
+    <h3>Real fog, real flags</h3>
+    <p>The low-visibility flags are not synthetic: the METAR reports recorded on 14 October 2026 show fog
+       at Paris Charles de Gaulle, down to 300 m at 08:00Z. Flights departing into it were flagged by the
+       same rules that flag the scripted thunderstorm at Palma.</p>
+  </aside>
+</article>
+
+<article class="figure" aria-labelledby="map-heading">
+  <header>
+    <h2 id="map-heading">The airspace at 10:19Z</h2>
+    <p>Latest position of {{ "{:,}".format(gold.headline.aircraft_tracked) }} aircraft over Western Europe from
+       the recorded OpenSky snapshots, with the airports SkyPulse monitors. Density is the message here,
+       so individual aircraft carry no hover.</p>
+  </header>
+  {{ charts.map | safe }}
+</article>
+{% endblock %}

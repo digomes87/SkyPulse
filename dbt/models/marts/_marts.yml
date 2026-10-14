@@ -1,0 +1,124 @@
+version: 2
+
+models:
+  - name: dim_airport
+    description: Airports (OurAirports, large and medium plus scheduled service) with country and EU261 scope. {{ doc('physical_layout') }}
+    columns:
+      - name: airport_icao
+        description: ICAO code, primary key.
+        data_tests: [unique, not_null]
+      - name: in_eu261_scope
+        description: True when departures from this airport are covered by EU261 (EU, EEA, CH, UK).
+
+  - name: dim_airline
+    description: Airlines with home country and EU261 carrier scope.
+    columns:
+      - name: airline_icao
+        data_tests: [unique, not_null]
+
+  - name: dim_route
+    description: Directed origin-destination pairs flown in the data, with great-circle distance and EU261 band.
+    columns:
+      - name: route_key
+        data_tests: [unique, not_null]
+      - name: distance_km
+        description: Haversine distance, as EU261 Art. 7(4) prescribes.
+        data_tests: [not_null, strictly_positive]
+      - name: eu261_distance_band
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [short, medium, long]
+      - name: origin_icao
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_airport')
+                field: airport_icao
+
+  - name: dim_date
+    description: Calendar days for the analysed period.
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: fct_flight
+    description: >
+      One row per flight with scheduled and actual times, delays in minutes and status.
+      Actual arrival is only set once the flight has landed. {{ doc('physical_layout') }}
+    columns:
+      - name: flight_key
+        description: Surrogate key of flight number and scheduled departure.
+        data_tests: [unique, not_null]
+      - name: route_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_route')
+                field: route_key
+      - name: flight_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: departure_delay_minutes
+        description: Actual (runway, else revised) minus scheduled departure. Negative when early.
+        data_tests:
+          - values_between:
+              arguments:
+                min_value: -120
+                max_value: 1440
+      - name: arrival_delay_minutes
+        description: Actual minus scheduled arrival, only for landed flights.
+        data_tests:
+          - values_between:
+              arguments:
+                min_value: -120
+                max_value: 1440
+      - name: delay_band
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [cancelled, not_arrived, on_time, 15_to_59, 60_to_179, 180_plus]
+
+  - name: fct_eu261_claim
+    description: >
+      EU261 assessment per disrupted flight. The weather flag marks a likely
+      extraordinary-circumstances exemption; it is an analytical signal, not a legal decision.
+    columns:
+      - name: claim_id
+        data_tests: [unique, not_null]
+      - name: flight_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_flight')
+                field: flight_key
+      - name: verdict
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [not_covered, pending, delay_under_threshold, cancellation_with_notice, eligible]
+      - name: amount_eur
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 125, 200, 250, 300, 400, 600]
+                quote: false
+      - name: distance_km
+        data_tests: [strictly_positive]
+
+  - name: fct_aircraft_position
+    description: Latest position per aircraft from the OpenSky state vectors.
+    columns:
+      - name: icao24
+        data_tests: [unique, not_null]
+      - name: latitude
+        data_tests:
+          - values_between:
+              arguments:
+                min_value: -90
+                max_value: 90
