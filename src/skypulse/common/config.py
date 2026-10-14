@@ -96,6 +96,12 @@ class IngestionSettings(BaseModel):
     metar_interval_seconds: float = Field(default=600.0, gt=0)
 
 
+class SparkSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    driver_memory: str = Field(default="2g", pattern=r"^\d+[mg]$")
+
+
 class ReferenceSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -128,6 +134,7 @@ class Settings(BaseSettings):
     ingestion: IngestionSettings = IngestionSettings()
     events: EventsSettings = EventsSettings()
     reference: ReferenceSettings = ReferenceSettings()
+    spark: SparkSettings = SparkSettings()
 
     @model_validator(mode="after")
     def _forbid_endpoint_override_on_aws(self) -> Self:
