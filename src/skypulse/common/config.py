@@ -47,9 +47,18 @@ class LakeSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     bucket_prefix: str = Field(default="skypulse", pattern=r"^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$")
+    root_uri: str | None = Field(
+        default=None,
+        description="Put every layer under one URI (e.g. file:///tmp/lake) instead of S3 buckets.",
+    )
 
     def bucket_for(self, layer: LakeLayer) -> str:
         return f"{self.bucket_prefix}-{layer}"
+
+    def uri_for(self, layer: LakeLayer) -> str:
+        if self.root_uri is not None:
+            return f"{self.root_uri.rstrip('/')}/{layer}"
+        return f"s3a://{self.bucket_for(layer)}"
 
 
 class OpenSkySettings(BaseModel):
