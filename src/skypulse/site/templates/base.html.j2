@@ -1,0 +1,42 @@
+{%- set root = "../" * depth -%}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'none'">
+  <meta name="description" content="SkyPulse: real-time flight disruption and EU261 exposure platform for European air traffic.">
+  <title>{% block title %}SkyPulse{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ root }}static/site.css">
+  <script src="{{ root }}static/site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="masthead">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="wordmark" href="{{ root }}index.html"><span class="mono">SKY</span>PULSE</a>
+      <ul>
+        <li><a href="{{ root }}index.html" {% if page == 'overview' %}aria-current="page"{% endif %}>Overview</a></li>
+        <li><a href="{{ root }}insights/index.html" {% if page == 'insights' %}aria-current="page"{% endif %}>Insights</a></li>
+        <li><a href="{{ root }}dbt/index.html">Gold models</a></li>
+        <li><a href="{{ repository }}">Code</a></li>
+      </ul>
+      <button class="theme" type="button" aria-label="Switch colour theme"><span aria-hidden="true">◐</span></button>
+    </nav>
+  </header>
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    <p>Built {{ built_at }} from the replay fixtures: real OpenSky positions and METAR reports recorded
+       on 14 October 2026, and a seeded synthetic schedule day. EU261 figures are analytical estimates,
+       not legal advice.</p>
+    <p><a href="{{ repository }}">Source on GitHub</a> · Data: OpenSky Network, NOAA Aviation Weather Center, OurAirports.</p>
+  </footer>
+  <div class="tooltip" role="status" hidden></div>
+</body>
+</html>
