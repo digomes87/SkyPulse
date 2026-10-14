@@ -44,11 +44,11 @@ ENTRYPOINT ["python", "-m", "skypulse.streaming"]
 FROM base AS dbt
 COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --group dbt --no-install-project
-COPY dbt ./dbt
+RUN mkdir /gold && chown skypulse /gold
+COPY --chown=skypulse dbt ./dbt
 WORKDIR /app/dbt
+USER skypulse
 RUN dbt deps
 # Gold tables live in a DuckDB file on a mounted volume (see docker-compose).
 ENV SKYPULSE_DUCKDB_PATH=/gold/skypulse.duckdb
-RUN mkdir /gold && chown skypulse /gold
-USER skypulse
 ENTRYPOINT ["dbt"]
