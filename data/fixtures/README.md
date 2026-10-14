@@ -6,7 +6,7 @@ development all read these files through the production clients and parsers.
 | Folder | Content | Origin |
 |--------|---------|--------|
 | `opensky/states/` | Raw `/states/all` bodies (gzip), Western Europe box | **Recorded** from the live OpenSky API on 2026-10-14 (`scripts/fixtures/record_live.py`) |
-| `metar/20261014T1016Z.json` | Raw `/api/data/metar` JSON, last 24 h for every monitored airport | **Recorded** from aviationweather.gov on 2026-10-14 |
+| `metar/20261014T1020Z.json` | Raw `/api/data/metar` JSON, last 24 h for every monitored airport | **Recorded** from aviationweather.gov on 2026-10-14 |
 | `metar/20261014T1300Z.json` | The recorded reports plus three SPECI reports of a thunderstorm at LEPA | **Synthetic scenario** (`scripts/fixtures/add_weather_scenario.py`), station name tagged `SYNTHETIC SCENARIO` |
 | `aerodatabox/<ICAO>/` | Hourly FIDS snapshots (withLeg=true) from 05:00Z to 22:00Z | **Synthetic** (`scripts/fixtures/generate_schedules.py`, seed 261) |
 

@@ -11,6 +11,7 @@ import gzip
 import json
 import time
 from datetime import UTC, datetime
+from itertools import batched
 from pathlib import Path
 
 import httpx
@@ -23,6 +24,8 @@ USER_AGENT = "SkyPulse/0.1 (+https://github.com/digomes87/SkyPulse)"
 # Western Europe, covering every monitored European airport.
 STATES_QUERY = {"lamin": 36, "lomin": -11, "lamax": 56, "lomax": 15}
 METAR_HOURS = 24
+# The API returns at most 400 entries; 4 stations x 24 h stays well below that.
+METAR_STATIONS_PER_CALL = 4
 
 
 def stamp() -> str:
@@ -45,11 +48,18 @@ def record_states(client: httpx.Client) -> None:
 
 
 def record_metar(client: httpx.Client) -> None:
-    ids = ",".join(str(code) for code in MonitoredAirports.load().codes())
-    query = {"ids": ids, "format": "json", "hours": METAR_HOURS}
-    response = client.get("https://aviationweather.gov/api/data/metar", params=query)
-    response.raise_for_status()
-    save(FIXTURES / "metar" / f"{stamp()}.json", response.json(), compress=False)
+    reports: list[object] = []
+    for group in batched(MonitoredAirports.load().codes(), METAR_STATIONS_PER_CALL):
+        query = {
+            "ids": ",".join(str(code) for code in group),
+            "format": "json",
+            "hours": METAR_HOURS,
+        }
+        response = client.get("https://aviationweather.gov/api/data/metar", params=query)
+        response.raise_for_status()
+        reports.extend(response.json())
+    print(f"metar: {len(reports)} reports")
+    save(FIXTURES / "metar" / f"{stamp()}.json", reports, compress=False)
 
 
 def main() -> None:
