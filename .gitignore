@@ -16,8 +16,6 @@ build/
 .idea/
 .vscode/
 .DS_Store
-.claude/
-CLAUDE.md
 
 # Secrets and local config
 .env
