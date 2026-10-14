@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, functions
 
 from skypulse.common.config import Settings
 from skypulse.ingestion.__main__ import main as ingest
@@ -56,10 +56,14 @@ def test_pinned_scenarios_reach_silver(pipeline: SparkSession, settings: Setting
     schedules = pipeline.read.format("delta").load(
         silver_path(settings, TABLES["flight_schedules"])
     )
-    status = {row["flight_number"]: row["status"] for row in schedules.collect()}
+    revised = functions.date_format("revised_departure_utc", "yyyy-MM-dd HH:mm")
+    rows = schedules.withColumn("revised", revised).collect()
+    flights = {row["flight_number"]: row for row in rows}
 
-    assert status["FR1234"] == "Canceled"
-    assert status["EI105"] == "Delayed"
+    # Kafka may also hold later replays of the same day, and silver keeps the newest
+    # version of each flight, so assert on facts that hold for every version.
+    assert flights["FR1234"]["status"] == "Canceled"
+    assert flights["EI105"]["revised"] == "2026-10-14 11:40"
 
 
 def test_silver_has_one_row_per_flight(pipeline: SparkSession, settings: Settings) -> None:
