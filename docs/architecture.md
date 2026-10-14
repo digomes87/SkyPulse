@@ -40,6 +40,7 @@ Declared in `infra/local/kafka/topics.txt`:
 | Topic | Key | Partitions | Retention |
 |-------|-----|-----------|-----------|
 | `skypulse.raw.aircraft-states` | `icao24` | 6 | 1 day |
+| `skypulse.raw.observed-flights` | `icao24` | 3 | 7 days |
 | `skypulse.raw.flight-schedules` | flight number + date | 3 | 7 days |
 | `skypulse.raw.metar` | airport ICAO | 3 | 7 days |
 | `skypulse.events.flight-disruptions` | flight id | 3 | 7 days |
