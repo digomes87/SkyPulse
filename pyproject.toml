@@ -23,6 +23,7 @@ spark = [
 [dependency-groups]
 dev = [
     "boto3>=1.35",
+    "hypothesis>=6.169.1",
     "mypy>=1.13",
     "pre-commit>=4.0",
     "pytest>=8.3",
