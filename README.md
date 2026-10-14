@@ -132,6 +132,7 @@ make down
 |---------|-----|
 | Kafka (from the host) | `localhost:9092` |
 | DynamoDB claims (via LocalStack) | `make claims` |
+| Airflow (`make airflow`) | http://localhost:8088 |
 | LocalStack (AWS APIs) | `http://localhost:4566` |
 
 Run the producers against recorded fixtures (no API keys needed):
@@ -210,7 +211,7 @@ tests/                unit and integration tests
 | M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Done |
 | M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Done |
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Done |
-| M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | In progress: reference data, batch jobs, dbt and the site are done; Airflow next |
+| M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Done |
 | M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Planned |
 | M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Planned |
 | M8 AWS + Databricks | Terraform modules, Kinesis mode, Glue/Athena, cost doc | Planned |

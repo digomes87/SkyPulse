@@ -144,3 +144,22 @@ cross-database macros keep the SQL portable to Databricks. Staging views, dimens
 `fct_eu261_claim`) and aggregates (`agg_airport_daily_delays`, `agg_route_otp`,
 `agg_eu261_exposure_by_airline`), with 58 tests. `make lake && make dbt-build` builds it
 locally; CI does the same in the `gold` job.
+
+## Orchestration (`airflow/`)
+
+Airflow 3 (LocalExecutor, Postgres metadata) under the compose `orchestration` profile, UI
+on http://localhost:8088. Airflow only orchestrates: every task is a container from the
+SkyPulse images, started by the DockerOperator through a Docker socket proxy that exposes
+nothing but containers, images and networks.
+
+| DAG | Schedule | Tasks |
+|-----|----------|-------|
+| `reference_data` | weekly | `skypulse.batch reference` |
+| `metar_refresh` | hourly | one METAR poll for every monitored airport |
+| `lake_to_gold` | hourly | bronze → silver → detector → EU261 assessments → `dbt build` |
+| `lake_maintenance` | daily 03:00 UTC | OPTIMIZE + Z-order, VACUUM 7 days |
+
+Every task is idempotent (checkpoints, MERGE on natural keys, full recompute of
+assessments), so retries and reruns are safe; a failing dbt test fails the run. In AWS the
+same steps map to EMR Serverless and ECS tasks (M8). `make airflow-validate` checks the DAG
+folder inside the real Airflow image in CI.
