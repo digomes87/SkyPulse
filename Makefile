@@ -9,7 +9,7 @@ help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install dependencies and git hooks
-	uv sync
+	uv sync --all-extras
 	uv run pre-commit install
 
 lint: ## Lint and check formatting
