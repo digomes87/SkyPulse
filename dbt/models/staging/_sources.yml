@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: silver
+    description: >
+      Silver Delta tables written by the streaming and batch jobs. Read in place with
+      DuckDB's delta_scan locally; on Databricks they are catalog tables.
+    meta:
+      external_location: "delta_scan('{{ env_var('SKYPULSE_SILVER_ROOT') }}/{name}')"
+    tables:
+      - name: flight_schedules
+        description: Current state of each flight (latest provider observation wins).
+      - name: metar_observations
+        description: METAR and SPECI reports, one row per station, time and report type.
+      - name: flight_disruptions
+        description: Disruptions announced by the detector, one per flight and kind.
+      - name: eu261_assessments
+        description: EU261 assessment per flight, recomputed in batch with skypulse.eu261.
+      - name: reference_airports
+        description: OurAirports airports with runway headings.
+      - name: reference_countries
+        description: Countries with the EU261 scope flag from the rules library.
+      - name: reference_airlines
+        description: Curated airline reference (ICAO, IATA, country).
