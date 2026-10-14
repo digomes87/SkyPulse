@@ -37,6 +37,9 @@ class TimeWindow:
     def duration(self) -> timedelta:
         return self.end - self.start
 
+    def contains(self, instant: datetime | None) -> bool:
+        return instant is not None and self.start <= instant < self.end
+
     def split(self, size: timedelta) -> list["TimeWindow"]:
         """Consecutive windows no longer than ``size`` covering this one."""
         starts = []

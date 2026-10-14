@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from skypulse.common.aviation import AirportIcao
+from skypulse.common.aviation import AirportIcao, TimeWindow
 from skypulse.common.clock import utc_iso
 from skypulse.common.logging import get_logger
 from skypulse.contracts import Event, EventSource, EventType
@@ -96,6 +96,14 @@ class FlightSchedule:
             }
         )
 
+    def scheduled_time_at(self, airport: AirportIcao) -> datetime | None:
+        """Scheduled time of this flight's movement at the given airport."""
+        field = "scheduled_departure_utc"
+        if self.data["origin_icao"] != str(airport):
+            field = "scheduled_arrival_utc"
+        value = self.data[field]
+        return datetime.fromisoformat(value) if value else None
+
     def natural_key(self) -> str:
         mutable = json.dumps([self.data[name] for name in MUTABLE_FIELDS])
         fingerprint = hashlib.sha256(mutable.encode()).hexdigest()[:16]
@@ -131,6 +139,12 @@ class ScheduleBatch:
         except (UnusableFlightError, KeyError) as error:
             _log.info("schedule_item_skipped", airport=str(requested), reason=str(error))
             return None
+
+    def within(self, window: TimeWindow, airport: AirportIcao) -> "ScheduleBatch":
+        kept = tuple(
+            flight for flight in self.flights if window.contains(flight.scheduled_time_at(airport))
+        )
+        return ScheduleBatch(kept, self.skipped)
 
     def merged_with(self, other: "ScheduleBatch") -> "ScheduleBatch":
         return ScheduleBatch(self.flights + other.flights, self.skipped + other.skipped)
