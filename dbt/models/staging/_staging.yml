@@ -12,6 +12,8 @@ models:
               arguments:
                 values: [Unknown, Expected, EnRoute, CheckIn, Boarding, GateClosed, Departed,
                          Delayed, Approaching, Arrived, Canceled, Diverted, CanceledUncertain]
+  - name: stg_aircraft_states
+    description: State vectors with a position, timestamps converted from Unix seconds.
   - name: stg_metar_observations
     description: METAR and SPECI reports.
   - name: stg_eu261_assessments

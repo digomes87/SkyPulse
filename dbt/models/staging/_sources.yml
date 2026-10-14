@@ -10,6 +10,8 @@ sources:
     tables:
       - name: flight_schedules
         description: Current state of each flight (latest provider observation wins).
+      - name: aircraft_states
+        description: OpenSky state vectors, one row per aircraft and last contact.
       - name: metar_observations
         description: METAR and SPECI reports, one row per station, time and report type.
       - name: flight_disruptions

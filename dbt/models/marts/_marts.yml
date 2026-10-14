@@ -110,3 +110,15 @@ models:
                 quote: false
       - name: distance_km
         data_tests: [strictly_positive]
+
+  - name: fct_aircraft_position
+    description: Latest position per aircraft from the OpenSky state vectors.
+    columns:
+      - name: icao24
+        data_tests: [unique, not_null]
+      - name: latitude
+        data_tests:
+          - values_between:
+              arguments:
+                min_value: -90
+                max_value: 90
