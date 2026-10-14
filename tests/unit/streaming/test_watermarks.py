@@ -7,6 +7,7 @@ import pytest
 from pyspark.sql import SparkSession
 
 from skypulse.common.config import Settings
+from skypulse.streaming.__main__ import Stage, start_stage
 from skypulse.streaming.bronze import bronze_path, to_bronze
 from skypulse.streaming.jobs import start_quarantine, start_silver
 from skypulse.streaming.silver import SILVER_TABLES, quarantine_path, silver_path
@@ -100,3 +101,14 @@ def test_summary_counts_each_table(spark: SparkSession, settings: Settings) -> N
     assert counts["bronze.raw_events"] == 1
     assert counts["silver.aircraft_states"] == 1
     assert counts["silver.metar_observations"] == 0
+
+
+def test_silver_stage_runs_all_queries_on_an_empty_lake(
+    spark: SparkSession, settings: Settings
+) -> None:
+    land_in_bronze(spark, settings, ["{broken", aircraft_state("aaaaaa", BASE)])
+
+    for query in start_stage(Stage.SILVER, spark, settings, Trigger(available_now=True)):
+        query.awaitTermination()
+
+    assert table_counts(spark, settings)["silver.quarantine"] == 1

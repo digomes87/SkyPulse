@@ -1,5 +1,6 @@
 """Streaming queries that move data bronze -> silver."""
 
+from delta.tables import DeltaTable
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.streaming.query import StreamingQuery
 
@@ -37,6 +38,20 @@ def start_silver(
         .option("checkpointLocation", checkpoint_path(settings, f"silver_{table.name}"))
     )
     return trigger.apply(writer).start()
+
+
+def ensure_quarantine_table(spark: SparkSession, settings: Settings, table: SilverTable) -> None:
+    """Create the shared quarantine table up front.
+
+    Several quarantine queries append to it; if they all found an empty directory they
+    would race to create the Delta log and all but one would fail.
+    """
+    path = quarantine_path(settings)
+    if DeltaTable.isDeltaTable(spark, path):
+        return
+    bronze = spark.read.format("delta").load(bronze_path(settings))
+    empty = quarantined_rows(parse(bronze, table), table).limit(0)
+    empty.write.format("delta").mode("append").save(path)
 
 
 def start_quarantine(
