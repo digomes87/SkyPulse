@@ -53,7 +53,7 @@
         "runway_arrival_utc",
         "status",
         "is_cargo",
-        "provider_updated_at"
+        "observed_at"
       ],
       "properties": {
         "flight_number": {
@@ -151,9 +151,10 @@
         "is_cargo": {
           "type": "boolean"
         },
-        "provider_updated_at": {
+        "observed_at": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "When SkyPulse fetched this version of the flight from the provider."
         }
       }
     }

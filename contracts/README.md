@@ -23,7 +23,7 @@ Every event shares the same envelope:
 |-------|-------------|
 | `aircraft_state` | `icao24` + `last_contact` |
 | `observed_flight` | `icao24` + `first_seen` |
-| `flight_schedule` | `flight_number` + `scheduled_departure_utc` + `provider_updated_at` |
+| `flight_schedule` | `flight_number` + `scheduled_departure_utc` + hash of the mutable fields (status, revised and runway times). Polling an unchanged flight yields the same id; any change yields a new event. |
 | `metar_observation` | `station_icao` + `observed_at` + `report_type` |
 
 ## Evolution rules
