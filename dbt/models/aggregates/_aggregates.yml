@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: agg_airport_daily_delays
+    description: Departures per airport and day with cancellation, delay and on-time rates.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [airport_icao, flight_date]
+    columns:
+      - name: on_time_rate
+        data_tests:
+          - values_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+
+  - name: agg_route_otp
+    description: On-time performance (arrival within 15 minutes) per route.
+    columns:
+      - name: route_key
+        data_tests: [unique, not_null]
+      - name: on_time_performance
+        data_tests:
+          - values_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+
+  - name: agg_eu261_exposure_by_airline
+    description: >
+      EU261 exposure per airline: gross (all eligible claims), likely exempt (eligible but
+      severe weather) and expected payout (the rest), also normalised per 100 flights.
+    columns:
+      - name: airline_icao
+        data_tests: [unique, not_null]
