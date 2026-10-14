@@ -58,6 +58,8 @@ async def test_contract_violations_go_to_the_dead_letter_topic() -> None:
     assert dead[0].headers[CORRELATION_HEADER]
 
 
-def test_every_event_type_has_a_route() -> None:
+def test_every_raw_event_type_has_a_route() -> None:
     for event_type in EventType:
+        if event_type is EventType.FLIGHT_DISRUPTION:
+            continue
         assert DEFAULT_ROUTES.topic_for(event_type).name.startswith("skypulse.raw.")

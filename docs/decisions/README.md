@@ -9,7 +9,7 @@ Records are immutable once accepted; a change of mind is a new ADR that supersed
 | [0002](0002-delta-lake-medallion.md) | Delta Lake and medallion architecture | Accepted |
 | [0003](0003-idempotency-and-deduplication.md) | Idempotency and deduplication strategy | Accepted |
 | [0004](0004-local-first-development.md) | Local-first development with LocalStack and replay fixtures | Accepted |
-| 0005 | EU261 rules engine as a pure library | Planned (M4) |
+| [0005](0005-eu261-rules-engine.md) | EU261 rules engine as a pure library | Accepted |
 | 0006 | Cost control on AWS | Planned (M8) |
 
 ## Template

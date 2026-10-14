@@ -1,5 +1,6 @@
 import pytest
 from pyspark.sql.types import (
+    ArrayType,
     BooleanType,
     DoubleType,
     LongType,
@@ -46,9 +47,16 @@ def test_objects_become_structs_in_declared_order() -> None:
     )
 
 
+def test_arrays_become_array_types() -> None:
+    assert spark_type({"type": "array", "items": {"type": "integer"}}) == (
+        ArrayType(LongType(), False),
+        False,
+    )
+
+
 def test_unsupported_schemas_fail_loudly() -> None:
     with pytest.raises(ValueError, match="unsupported"):
-        spark_type({"type": "array"})
+        spark_type({"type": ["string", "integer"]})
 
 
 @pytest.mark.parametrize("event_type", list(EventType))

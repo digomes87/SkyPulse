@@ -1,0 +1,12 @@
+[
+  {"icao": "RYR", "iata": "FR", "name": "Ryanair", "country": "IE"},
+  {"icao": "EIN", "iata": "EI", "name": "Aer Lingus", "country": "IE"},
+  {"icao": "IBE", "iata": "IB", "name": "Iberia", "country": "ES"},
+  {"icao": "DLH", "iata": "LH", "name": "Lufthansa", "country": "DE"},
+  {"icao": "AFR", "iata": "AF", "name": "Air France", "country": "FR"},
+  {"icao": "KLM", "iata": "KL", "name": "KLM", "country": "NL"},
+  {"icao": "BAW", "iata": "BA", "name": "British Airways", "country": "GB"},
+  {"icao": "EZY", "iata": "U2", "name": "easyJet", "country": "GB"},
+  {"icao": "TAP", "iata": "TP", "name": "TAP Air Portugal", "country": "PT"},
+  {"icao": "DAL", "iata": "DL", "name": "Delta Air Lines", "country": "US"}
+]

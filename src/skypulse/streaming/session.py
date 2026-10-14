@@ -52,6 +52,8 @@ def build_session(
         .config("spark.sql.session.timeZone", "UTC")
         .config("spark.sql.shuffle.partitions", "4")
         .config("spark.ui.showConsoleProgress", "false")
+        # Silver tables feed the disruption detector through their change data feed.
+        .config("spark.databricks.delta.properties.defaults.enableChangeDataFeed", "true")
     )
     if master is not None:
         builder = builder.master(master)

@@ -76,8 +76,11 @@ services:
       SKYPULSE_LAKE_BUCKET_PREFIX: ${SKYPULSE_LAKE__BUCKET_PREFIX:-skypulse}
     volumes:
       - ./infra/local/localstack/init-aws.sh:/etc/localstack/init/ready.d/10-init-aws.sh:ro
+      # Lambda functions run in sibling containers started through the Docker socket.
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
-      test: ["CMD-SHELL", "awslocal s3api head-bucket --bucket \"$${SKYPULSE_LAKE_BUCKET_PREFIX}-checkpoints\""]
+      # The claims table is the last resource the init script creates.
+      test: ["CMD-SHELL", "awslocal dynamodb describe-table --table-name eu261-claims > /dev/null"]
       interval: 5s
       timeout: 10s
       retries: 24

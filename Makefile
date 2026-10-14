@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: help install lint fmt typecheck test test-integration ci up down logs ps clean demo
+.PHONY: help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -57,4 +57,17 @@ demo: up ## Replay one day through ingestion, bronze and silver, then summarise 
 	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_START=2026-10-14T23:00:00Z producer-metar metar --cycles 1
 	$(PIPELINE) run --rm spark-bronze bronze --available-now --master "local[2]"
 	$(PIPELINE) run --rm spark-silver silver --available-now --master "local[2]"
+	$(MAKE) lambdas
+	$(PIPELINE) run --rm spark-silver detector --available-now --master "local[2]"
 	$(PIPELINE) run --rm --entrypoint python spark-silver -m skypulse.streaming.summary
+	@echo "Waiting for the calculator Lambda to drain the queue..."
+	@sleep 20
+	$(MAKE) claims
+
+lambdas: ## Package the Lambda handlers and deploy them to LocalStack
+	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test uv run python -m skypulse.deployment.lambdas
+
+claims: ## List EU261 claims stored in DynamoDB (LocalStack)
+	$(COMPOSE) exec -T localstack awslocal dynamodb scan --table-name eu261-claims \
+		--query 'Items[].[flight_number.S, kind.S, verdict.S, amount_eur.N, extraordinary_circumstances_likely.BOOL]' \
+		--output table

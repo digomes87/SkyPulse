@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from pyspark.sql.types import (
+    ArrayType,
     BooleanType,
     DataType,
     DoubleType,
@@ -47,6 +48,9 @@ def spark_type(schema: Mapping[str, Any]) -> tuple[DataType, bool]:
     concrete = [str(name) for name in names if name not in ("null", None)]
     if concrete == ["object"]:
         return _struct(schema), nullable
+    if concrete == ["array"]:
+        item_type, item_nullable = spark_type(schema["items"])
+        return ArrayType(item_type, item_nullable), nullable
     if len(concrete) != 1 or concrete[0] not in _SCALARS:
         raise ValueError(f"unsupported JSON Schema node: {dict(schema)}")
     if concrete[0] == "string" and schema.get("format") == "date-time":
