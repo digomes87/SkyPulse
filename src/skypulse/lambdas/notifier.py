@@ -11,8 +11,8 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from skypulse.lambdas.disruption import Disruption
-from skypulse.lambdas.eu261_calculator import correlation_of
 from skypulse.lambdas.logs import log
+from skypulse.lambdas.records import correlation_of
 
 WEBHOOK_TIMEOUT_SECONDS = 5
 

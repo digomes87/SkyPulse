@@ -15,16 +15,12 @@ import boto3  # provided by the Lambda runtime
 from skypulse.lambdas.claims import Claim, ClaimRepository, DynamoDbClaims
 from skypulse.lambdas.disruption import Disruption
 from skypulse.lambdas.logs import log
+from skypulse.lambdas.records import correlation_of
 
 CLAIMS_TABLE_VARIABLE = "CLAIMS_TABLE"
 DEFAULT_CLAIMS_TABLE = "eu261-claims"
 
 Clock = Callable[[], datetime]
-
-
-def correlation_of(record: Mapping[str, Any]) -> str | None:
-    attribute = record.get("messageAttributes", {}).get("correlation-id")
-    return attribute.get("stringValue") if attribute else None
 
 
 def process_record(record: Mapping[str, Any], claims: ClaimRepository, clock: Clock) -> None:
