@@ -8,7 +8,7 @@ One switch, ``SKYPULSE_RUN_MODE``, selects between the local docker-compose stac
 from enum import StrEnum
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LOCALSTACK_ENDPOINT = "http://localhost:4566"
@@ -50,6 +50,27 @@ class LakeSettings(BaseModel):
         return f"{self.bucket_prefix}-{layer}"
 
 
+class OpenSkySettings(BaseModel):
+    """Without credentials the client runs anonymously: /states/all only, 400 credits a day."""
+
+    model_config = ConfigDict(frozen=True)
+
+    client_id: str | None = None
+    client_secret: SecretStr | None = None
+
+
+class AeroDataBoxSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    api_key: SecretStr | None = None
+
+
+class AviationWeatherSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    user_agent: str = "SkyPulse/0.1 (+https://github.com/digomes87/SkyPulse)"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="SKYPULSE_",
@@ -64,6 +85,9 @@ class Settings(BaseSettings):
     kafka: KafkaSettings = KafkaSettings()
     aws: AwsSettings = AwsSettings()
     lake: LakeSettings = LakeSettings()
+    opensky: OpenSkySettings = OpenSkySettings()
+    aerodatabox: AeroDataBoxSettings = AeroDataBoxSettings()
+    aviationweather: AviationWeatherSettings = AviationWeatherSettings()
 
     @model_validator(mode="after")
     def _forbid_endpoint_override_on_aws(self) -> Self:

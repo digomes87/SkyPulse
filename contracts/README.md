@@ -11,7 +11,7 @@ Every event shares the same envelope:
 | Field | Meaning |
 |-------|---------|
 | `event_id` | UUIDv5 derived from the natural key of the observation. Re-ingesting the same observation produces the same id, which makes downstream deduplication trivial. |
-| `event_type` | `aircraft_state`, `flight_schedule`, `metar_observation` |
+| `event_type` | `aircraft_state`, `observed_flight`, `flight_schedule`, `metar_observation` |
 | `schema_version` | Integer, bumped only on breaking changes |
 | `source` | System the data came from (`replay` when served from fixtures) |
 | `produced_at` | UTC timestamp at which the producer emitted the event |
@@ -22,6 +22,7 @@ Every event shares the same envelope:
 | Event | Natural key |
 |-------|-------------|
 | `aircraft_state` | `icao24` + `last_contact` |
+| `observed_flight` | `icao24` + `first_seen` |
 | `flight_schedule` | `flight_number` + `scheduled_departure_utc` + `provider_updated_at` |
 | `metar_observation` | `station_icao` + `observed_at` + `report_type` |
 

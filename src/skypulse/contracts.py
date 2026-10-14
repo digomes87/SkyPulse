@@ -26,6 +26,7 @@ _REPOSITORY_CONTRACTS = Path(__file__).resolve().parents[2] / "contracts"
 
 class EventType(StrEnum):
     AIRCRAFT_STATE = "aircraft_state"
+    OBSERVED_FLIGHT = "observed_flight"
     FLIGHT_SCHEDULE = "flight_schedule"
     METAR_OBSERVATION = "metar_observation"
 
