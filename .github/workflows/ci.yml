@@ -131,15 +131,14 @@ jobs:
       - name: dbt docs
         run: make dbt-docs
 
-      - name: Keep the gold database and docs for the site
+      - name: Build the site
+        run: make site
+
+      - name: Keep the site for review
         uses: actions/upload-artifact@v4
         with:
-          name: gold
-          path: |
-            dbt/target/skypulse.duckdb
-            dbt/target/index.html
-            dbt/target/manifest.json
-            dbt/target/catalog.json
+          name: site
+          path: public
           retention-days: 7
 
       - name: Stack logs on failure
