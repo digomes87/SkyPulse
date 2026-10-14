@@ -1,0 +1,6 @@
+# topic                               partitions  retention_ms
+skypulse.raw.aircraft-states          6           86400000
+skypulse.raw.flight-schedules         3           604800000
+skypulse.raw.metar                    3           604800000
+skypulse.events.flight-disruptions    3           604800000
+skypulse.dlq.raw                      1           1209600000
