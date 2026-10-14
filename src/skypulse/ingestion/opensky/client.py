@@ -1,12 +1,11 @@
 """Async client for the OpenSky Network REST API."""
 
-from collections.abc import Mapping
 from datetime import timedelta
 
 import httpx
 
 from skypulse.common.aviation import AirportIcao, TimeWindow
-from skypulse.common.http import RetryingHttp
+from skypulse.common.http import QueryParams, RetryingHttp
 from skypulse.ingestion.opensky.access import Access, CreditTracker
 from skypulse.ingestion.opensky.models import BoundingBox, ObservedFlight, StateSnapshot
 
@@ -44,7 +43,7 @@ class OpenSkyClient:
     async def _flights_chunk(
         self, path: str, airport: AirportIcao, chunk: TimeWindow
     ) -> list[ObservedFlight]:
-        query: dict[str, str | int | float] = {
+        query: QueryParams = {
             "airport": str(airport),
             "begin": int(chunk.start.timestamp()),
             "end": int(chunk.end.timestamp()),
@@ -55,9 +54,7 @@ class OpenSkyClient:
         response.raise_for_status()
         return [ObservedFlight.from_payload(item) for item in response.json()]
 
-    async def _get(
-        self, path: str, query: Mapping[str, str | int | float], cost: int
-    ) -> httpx.Response:
+    async def _get(self, path: str, query: QueryParams, cost: int) -> httpx.Response:
         self._credits.ensure_affordable(cost)
         response = await self._authorised_get(path, query)
         if response.status_code == httpx.codes.UNAUTHORIZED:
@@ -66,8 +63,6 @@ class OpenSkyClient:
         self._credits.observe(response)
         return response
 
-    async def _authorised_get(
-        self, path: str, query: Mapping[str, str | int | float]
-    ) -> httpx.Response:
+    async def _authorised_get(self, path: str, query: QueryParams) -> httpx.Response:
         headers = await self._access.headers()
         return await self._http.get(f"{BASE_URL}{path}", params=query, headers=headers)

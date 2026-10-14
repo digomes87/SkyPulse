@@ -17,6 +17,7 @@ RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 RETRY_AFTER_HEADERS = ("Retry-After", "X-Rate-Limit-Retry-After-Seconds")
 
 Sleep = Callable[[float], Awaitable[None]]
+QueryParams = Mapping[str, str | int | float]
 
 _log = get_logger(__name__)
 
@@ -68,7 +69,7 @@ class RetryingHttp:
     async def get(
         self,
         url: str,
-        params: Mapping[str, str | int | float] | None = None,
+        params: QueryParams | None = None,
         headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         last_failure = "no attempt made"
@@ -85,7 +86,7 @@ class RetryingHttp:
     async def _attempt(
         self,
         url: str,
-        params: Mapping[str, str | int | float] | None,
+        params: QueryParams | None,
         headers: Mapping[str, str] | None,
     ) -> httpx.Response | httpx.TransportError:
         try:
