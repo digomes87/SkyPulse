@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Local tooling and editors
+.idea/
+.vscode/
+.DS_Store
+.claude/
+CLAUDE.md
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Data and runtime state (fixtures under data/fixtures are versioned)
+data/*
+!data/fixtures/
+spark-warehouse/
+metastore_db/
+checkpoints/
+mlruns/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

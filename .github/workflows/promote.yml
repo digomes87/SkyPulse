@@ -1,0 +1,44 @@
+name: Promote to main
+
+# main only ever points at commits that passed CI on develop.
+# After a green CI run on a push to develop, main is fast-forwarded to that commit.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [develop]
+
+concurrency:
+  group: promote-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fast-forward:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fast-forward main to the tested develop commit
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git fetch origin develop
+          if git merge-base --is-ancestor "$TESTED_SHA" HEAD; then
+            echo "main already contains $TESTED_SHA, nothing to promote"
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor HEAD "$TESTED_SHA"; then
+            echo "::error::main has diverged from develop, promotion needs a manual merge"
+            exit 1
+          fi
+          git push origin "$TESTED_SHA:refs/heads/main"
