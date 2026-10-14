@@ -52,7 +52,7 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "
 ignore = ["PLR2004"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "ARG"]
+"tests/**" = ["PLR2004", "ARG", "PLR0913"]
 "scripts/**" = ["T20"]
 
 [tool.mypy]
