@@ -61,3 +61,18 @@ def test_unknown_coordinates_mean_not_assessable() -> None:
     )
 
     assert Disruption.from_document(document).assessable() is False
+
+
+def test_wind_along_the_runway_is_not_a_crosswind() -> None:
+    palma = {**PALMA, "runway_headings": [59, 239]}
+    document = disruption(
+        flight_number="FR6403",
+        origin=palma,
+        destination=STANSTED,
+        scheduled_departure_utc="2026-10-14T12:30:00Z",
+        origin_weather=[STORM],
+    )
+
+    severe = Disruption.from_document(document).assess().severe_weather
+
+    assert severe == {SevereCondition.THUNDERSTORM}

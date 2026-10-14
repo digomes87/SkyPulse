@@ -71,11 +71,21 @@ def classify(schedules: DataFrame) -> DataFrame:
     return with_delays.withColumn("kind", kind).where(functions.col("kind").isNotNull())
 
 
-def reference_airports(spark: SparkSession) -> DataFrame:
-    rows = [(row["icao"], row["country"], row["latitude"], row["longitude"]) for row in airports()]
-    return spark.createDataFrame(
-        rows, "icao string, country string, latitude double, longitude double"
-    )
+AIRPORT_REFERENCE_SCHEMA = (
+    "icao string, country string, latitude double, longitude double, runway_headings array<int>"
+)
+
+
+def reference_airports(spark: SparkSession, loaded: DataFrame | None = None) -> DataFrame:
+    """Airports from the OurAirports reference table when loaded, else the curated list."""
+    if loaded is not None:
+        return loaded.select("icao", "country", "latitude", "longitude", "runway_headings")
+    no_runways: list[int] = []
+    rows = [
+        (row["icao"], row["country"], row["latitude"], row["longitude"], no_runways)
+        for row in airports()
+    ]
+    return spark.createDataFrame(rows, AIRPORT_REFERENCE_SCHEMA)
 
 
 def reference_airlines(spark: SparkSession) -> DataFrame:
@@ -86,15 +96,16 @@ def reference_airlines(spark: SparkSession) -> DataFrame:
 def _airport_struct(code_column: str, reference: DataFrame, alias: str) -> tuple[DataFrame, Column]:
     renamed = reference.select(
         functions.col("icao").alias(f"{alias}_icao_ref"),
-        functions.struct(functions.col("icao"), "country", "latitude", "longitude").alias(
-            f"{alias}_reference"
-        ),
+        functions.struct(
+            functions.col("icao"), "country", "latitude", "longitude", "runway_headings"
+        ).alias(f"{alias}_reference"),
     )
     fallback = functions.struct(
         functions.col(code_column).alias("icao"),
         functions.lit(None).cast("string").alias("country"),
         functions.lit(None).cast("double").alias("latitude"),
         functions.lit(None).cast("double").alias("longitude"),
+        functions.expr("cast(array() as array<int>)").alias("runway_headings"),
     )
     value = functions.coalesce(functions.col(f"{alias}_reference"), fallback)
     return renamed, value
@@ -124,10 +135,12 @@ def _weather_near(
     return disruptions.join(grouped, list(NATURAL_KEY), "left")
 
 
-def enrich(classified: DataFrame, metar: DataFrame) -> DataFrame:
+def enrich(
+    classified: DataFrame, metar: DataFrame, loaded_airports: DataFrame | None = None
+) -> DataFrame:
     """Adds airport and airline reference data and METAR near departure and arrival."""
     spark = classified.sparkSession
-    reference = reference_airports(spark)
+    reference = reference_airports(spark, loaded_airports)
     origins, origin_value = _airport_struct("origin_icao", reference, "origin")
     destinations, destination_value = _airport_struct("destination_icao", reference, "destination")
     with_reference = (

@@ -81,10 +81,15 @@ class Disruption:
         at_destination = [_observation(item) for item in self.data["destination_weather"]]
         found = frozenset[SevereCondition]()
         if departure is not None:
-            found |= severe_weather_around(at_origin, departure, policy)
+            found |= severe_weather_around(at_origin, departure, policy, self._runways("origin"))
         if arrival is not None:
-            found |= severe_weather_around(at_destination, arrival, policy)
+            found |= severe_weather_around(
+                at_destination, arrival, policy, self._runways("destination")
+            )
         return found
+
+    def _runways(self, side: str) -> tuple[int, ...]:
+        return tuple(self.data[side].get("runway_headings") or ())
 
     def assess(self, policy: WeatherPolicy | None = None) -> Assessment:
         return assess(self.flight_case(), self.severe_weather(policy or WeatherPolicy()))

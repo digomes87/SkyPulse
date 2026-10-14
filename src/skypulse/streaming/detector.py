@@ -87,9 +87,11 @@ def detect_batch(batch: DataFrame, settings: Settings, announcer: Announcer) -> 
     spark = batch.sparkSession
     changed = batch.where(functions.col("_change_type").isin(*CURRENT_VERSIONS))
     path = disruptions_path(settings)
-    fresh = not_yet_announced(
-        enrich(classify(changed), _metar(spark, settings)), _table_or_none(spark, path)
+    airports = _table_or_none(
+        spark, f"{settings.lake.uri_for(LakeLayer.SILVER)}/reference_airports"
     )
+    enriched = enrich(classify(changed), _metar(spark, settings), airports)
+    fresh = not_yet_announced(enriched, _table_or_none(spark, path))
     announcements = [
         Announcement.from_payload(row["payload"], row["correlation_id"])
         for row in as_payloads(fresh).collect()
