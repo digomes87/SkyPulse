@@ -26,4 +26,4 @@ def test_aws_mode_uses_the_default_s3a_chain(monkeypatch: pytest.MonkeyPatch) ->
 @pytest.mark.spark
 def test_session_has_delta_and_utc(spark: SparkSession) -> None:
     assert spark.conf.get("spark.sql.session.timeZone") == "UTC"
-    assert "DeltaSparkSessionExtension" in spark.conf.get("spark.sql.extensions", "")
+    assert "DeltaSparkSessionExtension" in str(spark.conf.get("spark.sql.extensions"))
