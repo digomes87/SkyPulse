@@ -31,6 +31,7 @@ x-airflow: &airflow
     SKYPULSE_INGESTION__REPLAY: "true"
     SKYPULSE_KAFKA__BOOTSTRAP_SERVERS: kafka:19092
     SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
+    SKYPULSE_SILVER_ROOT: s3://skypulse-silver
     SKYPULSE_S3_ENDPOINT: localstack:4566
     SKYPULSE_S3_URL_STYLE: path
     SKYPULSE_S3_USE_SSL: "false"
