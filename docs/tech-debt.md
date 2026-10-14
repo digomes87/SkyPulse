@@ -21,3 +21,13 @@ Known shortcuts, kept visible on purpose. Each item says why it exists and what 
 - **Done when:** a grep for URLs, hostnames, ports and magic numbers in `src/` finds only
   true constants (contract namespace, protocol values), and `.env.example` documents every
   setting.
+
+## TD-002: Airline reference data is curated by hand
+
+- **Raised:** 2026-10-14, during M5
+- **Why it exists:** OurAirports has no airline data and open airline registries need
+  licensing review. `src/skypulse/reference/airlines.json` lists the carriers in the
+  fixtures.
+- **Effect:** a carrier missing from the list has no country, so arrivals into the EU261
+  area on that carrier are treated as not covered.
+- **Done when:** airlines come from a maintained source loaded by `skypulse.batch reference`.
