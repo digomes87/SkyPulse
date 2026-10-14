@@ -86,8 +86,8 @@ flowchart TD
 | [aviationweather.gov](https://aviationweather.gov/data/api/) Data API | METAR per airport | Polled per airport, backfilled in batch |
 | [OurAirports](https://ourairports.com/data/) | Airports, ICAO/IATA codes, coordinates, country | Batch reference load |
 
-Rate limits, authentication and terms for each source will be documented in
-`docs/data-sources.md`.
+Rate limits, authentication and terms for each source are documented in
+[docs/data-sources.md](docs/data-sources.md). Event schemas live in [contracts/](contracts/).
 
 More detail: [architecture](docs/architecture.md) and [decision records](docs/decisions/).
 
@@ -129,6 +129,15 @@ make down
 |---------|-----|
 | Kafka (from the host) | `localhost:9092` |
 | LocalStack (AWS APIs) | `http://localhost:4566` |
+
+Run the producers against recorded fixtures (no API keys needed):
+
+```bash
+export SKYPULSE_INGESTION__REPLAY=true
+uv run python -m skypulse.ingestion states --cycles 1
+uv run python -m skypulse.ingestion schedules --cycles 1
+uv run python -m skypulse.ingestion metar --cycles 1
+```
 
 `make help` lists every target. The end-to-end `make demo` arrives with the streaming
 milestones; see the [roadmap](#roadmap).
@@ -178,7 +187,7 @@ tests/                unit and integration tests
 | Milestone | Scope | Status |
 |-----------|-------|--------|
 | M1 Foundation | Repo skeleton, tooling, CI, docker-compose (Kafka + LocalStack), config and logging | Done |
-| M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Planned |
+| M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Done |
 | M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Planned |
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Planned |
 | M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Planned |

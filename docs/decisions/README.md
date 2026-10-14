@@ -5,7 +5,7 @@ Records are immutable once accepted; a change of mind is a new ADR that supersed
 
 | # | Title | Status |
 |---|-------|--------|
-| 0001 | Streaming abstraction over Kafka and Kinesis | Planned (M2) |
+| [0001](0001-streaming-abstraction.md) | Streaming abstraction over Kafka and Kinesis | Accepted |
 | 0002 | Delta Lake and medallion architecture | Planned (M3) |
 | 0003 | Idempotency and deduplication strategy | Planned (M3) |
 | [0004](0004-local-first-development.md) | Local-first development with LocalStack and replay fixtures | Accepted |
