@@ -79,3 +79,15 @@ def test_lake_bucket_prefix_must_be_a_valid_bucket_name(monkeypatch: pytest.Monk
 
     with pytest.raises(ValidationError):
         Settings()
+
+
+def test_lake_layers_default_to_one_s3_bucket_each() -> None:
+    assert Settings().lake.uri_for(LakeLayer.SILVER) == "s3a://skypulse-silver"
+
+
+def test_lake_root_uri_keeps_all_layers_under_one_location(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SKYPULSE_LAKE__ROOT_URI", "file:///tmp/lake/")
+
+    assert Settings().lake.uri_for(LakeLayer.BRONZE) == "file:///tmp/lake/bronze"

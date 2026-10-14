@@ -3,13 +3,13 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: help install lint fmt typecheck test test-integration ci up down logs ps clean
+.PHONY: help install lint fmt typecheck test test-integration ci up down logs ps clean demo
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install dependencies and git hooks
-	uv sync
+	uv sync --all-extras
 	uv run pre-commit install
 
 lint: ## Lint and check formatting
@@ -46,3 +46,15 @@ ps: ## Show stack status
 
 clean: ## Stop the stack and drop its volumes
 	$(COMPOSE) down -v --remove-orphans
+
+PIPELINE := $(COMPOSE) --profile pipeline
+DEMO_SPEED := 720
+
+demo: up ## Replay one day through ingestion, bronze and silver, then summarise the lake
+	$(PIPELINE) build
+	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_START=2026-10-14T10:30:00Z producer-states states --cycles 1
+	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_SPEED=$(DEMO_SPEED) producer-schedules schedules --cycles 19 --interval 5
+	$(PIPELINE) run --rm -e SKYPULSE_INGESTION__REPLAY_START=2026-10-14T23:00:00Z producer-metar metar --cycles 1
+	$(PIPELINE) run --rm spark-bronze bronze --available-now --master "local[2]"
+	$(PIPELINE) run --rm spark-silver silver --available-now --master "local[2]"
+	$(PIPELINE) run --rm --entrypoint python spark-silver -m skypulse.streaming.summary

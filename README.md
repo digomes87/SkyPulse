@@ -112,7 +112,7 @@ The rules engine is a standalone library with no I/O, tested with property-based
 
 ## Quickstart
 
-Requirements: Docker with Compose v2, [uv](https://docs.astral.sh/uv/), GNU Make.
+Requirements: Docker with Compose v2, [uv](https://docs.astral.sh/uv/), GNU Make, Java 17+ for the Spark tests.
 
 ```bash
 git clone https://github.com/digomes87/SkyPulse.git
@@ -139,7 +139,13 @@ uv run python -m skypulse.ingestion schedules --cycles 1
 uv run python -m skypulse.ingestion metar --cycles 1
 ```
 
-`make help` lists every target. The end-to-end `make demo` arrives with the streaming
+Or replay a whole synthetic day through ingestion, bronze and silver in containers:
+
+```bash
+make demo   # builds the images, replays 05:00-23:00Z at 720x, prints row counts per table
+```
+
+`make help` lists every target. Gold tables and EU261 claims join `make demo` in the next
 milestones; see the [roadmap](#roadmap).
 
 ## Planned tech stack
@@ -188,7 +194,7 @@ tests/                unit and integration tests
 |-----------|-------|--------|
 | M1 Foundation | Repo skeleton, tooling, CI, docker-compose (Kafka + LocalStack), config and logging | Done |
 | M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Done |
-| M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Planned |
+| M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Done |
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Planned |
 | M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Planned |
 | M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Planned |

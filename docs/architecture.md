@@ -72,3 +72,27 @@ AviationWeatherClient ┘   (contract check)      └─> skypulse.dlq.raw (viol
   (default start 2026-10-14T05:00Z, 60x speed) walks through the recorded snapshots. Clients,
   parsers and the publisher are the production code paths.
 - **Wiring** (`wiring.py`) is the only module that picks concrete implementations.
+
+## Streaming lakehouse (`skypulse.streaming`)
+
+```
+Kafka skypulse.(raw|dlq).*
+   │  bronze_raw_events (append, partitioned by topic, ingest_date)
+   ▼
+bronze/raw_events ──┬─ silver_<table>     parse → required checks → watermark dedup → MERGE
+                    └─ quarantine_<table> parse failures → silver/quarantine (append)
+```
+
+| Module | Responsibility |
+|--------|----------------|
+| `schemas` | Spark `StructType`s generated from the JSON Schema contracts |
+| `bronze` | Kafka record → bronze row (payload as string, headers extracted), Kafka streaming query |
+| `silver` | Table specs (event time, watermark, natural key, update rule), parsing, quarantine, dedup, MERGE |
+| `jobs` | Streaming queries bronze → silver and bronze → quarantine |
+| `session` | SparkSession with Delta and only the connectors a stage needs |
+| `summary` | Row counts per table, used by `make demo` |
+
+Run with `python -m skypulse.streaming bronze|silver [--available-now]`. In containers the
+`spark` image already holds the Delta, Kafka and S3A packages. Design choices are recorded
+in [ADR 0002](decisions/0002-delta-lake-medallion.md) (Delta, medallion) and
+[ADR 0003](decisions/0003-idempotency-and-deduplication.md) (idempotency, watermarks).

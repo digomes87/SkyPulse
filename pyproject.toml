@@ -14,6 +14,12 @@ dependencies = [
     "structlog>=24.4",
 ]
 
+[project.optional-dependencies]
+spark = [
+    "delta-spark==4.0.1",
+    "pyspark==4.0.1",
+]
+
 [dependency-groups]
 dev = [
     "boto3>=1.35",
@@ -41,11 +47,12 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "ARG", "TID", "DTZ"]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "ARG", "TID", "DTZ", "T20"]
 ignore = ["PLR2004"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["PLR2004", "ARG"]
+"scripts/**" = ["T20"]
 
 [tool.mypy]
 strict = true
@@ -54,7 +61,7 @@ mypy_path = "src"
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["confluent_kafka.*", "boto3.*"]
+module = ["confluent_kafka.*", "boto3.*", "delta.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -62,7 +69,10 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers -m 'not integration'"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-markers = ["integration: needs the local docker-compose stack (make up)"]
+markers = [
+    "integration: needs the local docker-compose stack (make up)",
+    "spark: starts a local Spark session (needs Java 17+)",
+]
 
 [tool.coverage.run]
 source = ["skypulse"]
