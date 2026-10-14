@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: lake dbt-build dbt-docs help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
+.PHONY: lake dbt-build dbt-docs site help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -95,3 +95,6 @@ dbt-build: ## Build and test the gold models on the local lake
 
 dbt-docs: ## Generate dbt docs into dbt/target
 	$(DBT) docs generate
+
+site: ## Build the static site (landing, insights, dbt docs) into public/
+	uv run python -m skypulse.site.build --gold dbt/target/skypulse.duckdb --dbt-target dbt/target --out public
