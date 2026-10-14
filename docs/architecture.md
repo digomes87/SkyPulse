@@ -40,6 +40,7 @@ Declared in `infra/local/kafka/topics.txt`:
 | Topic | Key | Partitions | Retention |
 |-------|-----|-----------|-----------|
 | `skypulse.raw.aircraft-states` | `icao24` | 6 | 1 day |
+| `skypulse.raw.observed-flights` | `icao24` | 3 | 7 days |
 | `skypulse.raw.flight-schedules` | flight number + date | 3 | 7 days |
 | `skypulse.raw.metar` | airport ICAO | 3 | 7 days |
 | `skypulse.events.flight-disruptions` | flight id | 3 | 7 days |
@@ -51,3 +52,23 @@ Keys keep every update for one aircraft, flight or airport in order on one parti
 
 One bucket per layer, named `<prefix>-<layer>` (default prefix `skypulse`): `bronze`, `silver`,
 `gold` and `checkpoints` (streaming state, kept apart so it can have its own lifecycle rules).
+
+## Ingestion (`skypulse.ingestion`)
+
+```
+OpenSkyClient ─┐                       ┌─> skypulse.raw.<feed>
+ScheduleProvider ├─> Poller ─> EventPublisher ─┤
+AviationWeatherClient ┘   (contract check)      └─> skypulse.dlq.raw (violations)
+```
+
+- **Pollers** (`pollers.py`) run one cycle per source: fetch, build events, publish. The
+  runner repeats them on an interval, each cycle under its own correlation id; a failed cycle
+  is logged and skipped, and running out of OpenSky credits backs off for 15 minutes.
+- **Events** carry a deterministic `event_id` (UUIDv5 of the natural key, see
+  [contracts/README.md](../contracts/README.md)), so the same observation ingested twice is
+  the same event downstream.
+- **Replay mode** (`SKYPULSE_INGESTION__REPLAY=true`) swaps the HTTP transport for one that
+  answers from `data/fixtures/` and the schedule provider for `ReplayProvider`. A replay clock
+  (default start 2026-10-14T05:00Z, 60x speed) walks through the recorded snapshots. Clients,
+  parsers and the publisher are the production code paths.
+- **Wiring** (`wiring.py`) is the only module that picks concrete implementations.

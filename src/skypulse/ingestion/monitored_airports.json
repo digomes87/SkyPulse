@@ -1,0 +1,13 @@
+[
+  {"icao": "EIDW", "timezone": "Europe/Dublin"},
+  {"icao": "EGSS", "timezone": "Europe/London"},
+  {"icao": "EGLL", "timezone": "Europe/London"},
+  {"icao": "LEMD", "timezone": "Europe/Madrid"},
+  {"icao": "LEPA", "timezone": "Europe/Madrid"},
+  {"icao": "LIRF", "timezone": "Europe/Rome"},
+  {"icao": "LFPG", "timezone": "Europe/Paris"},
+  {"icao": "EDDF", "timezone": "Europe/Berlin"},
+  {"icao": "EHAM", "timezone": "Europe/Amsterdam"},
+  {"icao": "LPPT", "timezone": "Europe/Lisbon"},
+  {"icao": "KJFK", "timezone": "America/New_York"}
+]

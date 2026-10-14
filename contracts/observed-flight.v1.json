@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/digomes87/SkyPulse/contracts/observed-flight.v1.json",
+  "title": "observed_flight",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "source",
+    "produced_at",
+    "data"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Deterministic UUIDv5 of the natural key; re-ingesting the same observation yields the same id."
+    },
+    "event_type": {
+      "const": "observed_flight"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "source": {
+      "enum": [
+        "opensky",
+        "replay"
+      ]
+    },
+    "produced_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "icao24",
+        "callsign",
+        "first_seen",
+        "last_seen",
+        "est_departure_airport",
+        "est_arrival_airport"
+      ],
+      "properties": {
+        "icao24": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{6}$"
+        },
+        "callsign": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 8
+        },
+        "first_seen": {
+          "type": "string",
+          "format": "date-time",
+          "description": "First time the aircraft was seen by the network on this flight (proxy for actual departure)."
+        },
+        "last_seen": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last time seen on this flight (proxy for actual arrival)."
+        },
+        "est_departure_airport": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Z0-9]{4}$"
+        },
+        "est_arrival_airport": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Z0-9]{4}$"
+        }
+      }
+    }
+  }
+}

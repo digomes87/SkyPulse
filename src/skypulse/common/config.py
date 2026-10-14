@@ -5,10 +5,12 @@ One switch, ``SKYPULSE_RUN_MODE``, selects between the local docker-compose stac
 ``SKYPULSE_KAFKA__BOOTSTRAP_SERVERS``.
 """
 
+from datetime import UTC, datetime
 from enum import StrEnum
+from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LOCALSTACK_ENDPOINT = "http://localhost:4566"
@@ -50,6 +52,41 @@ class LakeSettings(BaseModel):
         return f"{self.bucket_prefix}-{layer}"
 
 
+class OpenSkySettings(BaseModel):
+    """Without credentials the client runs anonymously: /states/all only, 400 credits a day."""
+
+    model_config = ConfigDict(frozen=True)
+
+    client_id: str | None = None
+    client_secret: SecretStr | None = None
+
+
+class AeroDataBoxSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    api_key: SecretStr | None = None
+
+
+class AviationWeatherSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    user_agent: str = "SkyPulse/0.1 (+https://github.com/digomes87/SkyPulse)"
+
+
+class IngestionSettings(BaseModel):
+    """Replay mode serves recorded fixtures through the real clients (see ADR 0004)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    replay: bool = False
+    fixtures_dir: Path = Path("data/fixtures")
+    replay_start: datetime = datetime(2026, 10, 14, 5, 0, tzinfo=UTC)
+    replay_speed: float = Field(default=60.0, gt=0)
+    states_interval_seconds: float = Field(default=10.0, gt=0)
+    schedules_interval_seconds: float = Field(default=300.0, gt=0)
+    metar_interval_seconds: float = Field(default=600.0, gt=0)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="SKYPULSE_",
@@ -64,6 +101,10 @@ class Settings(BaseSettings):
     kafka: KafkaSettings = KafkaSettings()
     aws: AwsSettings = AwsSettings()
     lake: LakeSettings = LakeSettings()
+    opensky: OpenSkySettings = OpenSkySettings()
+    aerodatabox: AeroDataBoxSettings = AeroDataBoxSettings()
+    aviationweather: AviationWeatherSettings = AviationWeatherSettings()
+    ingestion: IngestionSettings = IngestionSettings()
 
     @model_validator(mode="after")
     def _forbid_endpoint_override_on_aws(self) -> Self:
