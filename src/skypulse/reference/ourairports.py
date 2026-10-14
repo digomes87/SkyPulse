@@ -38,9 +38,15 @@ class AirportRow:
 
     def as_tuple(self) -> tuple[object, ...]:
         return (
-            self.icao, self.iata, self.name, self.airport_type, self.country,
-            self.latitude, self.longitude, self.municipality,
-        )  # fmt: skip
+            self.icao,
+            self.iata,
+            self.name,
+            self.airport_type,
+            self.country,
+            self.latitude,
+            self.longitude,
+            self.municipality,
+        )
 
 
 def _airport(row: dict[str, str]) -> AirportRow | None:
