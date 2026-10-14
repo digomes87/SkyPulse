@@ -96,6 +96,12 @@ class IngestionSettings(BaseModel):
     metar_interval_seconds: float = Field(default=600.0, gt=0)
 
 
+class EventsSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    disruptions_topic: str = "flight-disruptions"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="SKYPULSE_",
@@ -114,6 +120,7 @@ class Settings(BaseSettings):
     aerodatabox: AeroDataBoxSettings = AeroDataBoxSettings()
     aviationweather: AviationWeatherSettings = AviationWeatherSettings()
     ingestion: IngestionSettings = IngestionSettings()
+    events: EventsSettings = EventsSettings()
 
     @model_validator(mode="after")
     def _forbid_endpoint_override_on_aws(self) -> Self:
