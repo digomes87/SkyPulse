@@ -25,6 +25,17 @@ jobs:
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
           ./actionlint -color
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Spark packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.ivy2.5.2
+          key: ivy-${{ hashFiles('src/skypulse/streaming/session.py', 'uv.lock') }}
+
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -51,6 +62,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Spark packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.ivy2.5.2
+          key: ivy-${{ hashFiles('src/skypulse/streaming/session.py', 'uv.lock') }}
+
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -71,3 +93,25 @@ jobs:
       - name: Stop local stack
         if: always()
         run: make clean
+
+  images:
+    name: images
+    needs: checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [producer, spark]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.target }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          tags: skypulse-${{ matrix.target }}:ci
+          push: false
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
