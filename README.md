@@ -1,5 +1,7 @@
 # SkyPulse
 
+[![CI](https://github.com/digomes87/SkyPulse/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/digomes87/SkyPulse/actions/workflows/ci.yml)
+
 **Real-time flight disruption and EU261 exposure platform for European air traffic.**
 
 SkyPulse ingests live aircraft positions over Europe, matches them against flight schedules,
@@ -87,6 +89,8 @@ flowchart TD
 Rate limits, authentication and terms for each source will be documented in
 `docs/data-sources.md`.
 
+More detail: [architecture](docs/architecture.md) and [decision records](docs/decisions/).
+
 ## EU261 rules (simplified)
 
 The rules engine is a standalone library with no I/O, tested with property-based tests.
@@ -105,6 +109,29 @@ The rules engine is a standalone library with no I/O, tested with property-based
 - **50% reduction** when re-routing keeps the arrival delay within the regulation thresholds.
 - **`extraordinary_circumstances_likely`** is raised when METAR around the scheduled time shows
   severe weather. It is an analytical flag, **not a legal decision**.
+
+## Quickstart
+
+Requirements: Docker with Compose v2, [uv](https://docs.astral.sh/uv/), GNU Make.
+
+```bash
+git clone https://github.com/digomes87/SkyPulse.git
+cd SkyPulse
+cp .env.example .env
+make install            # dependencies + git hooks
+make up                 # Kafka + LocalStack, topics and buckets created
+make test               # unit tests with coverage
+make test-integration   # checks against the running stack
+make down
+```
+
+| Service | URL |
+|---------|-----|
+| Kafka (from the host) | `localhost:9092` |
+| LocalStack (AWS APIs) | `http://localhost:4566` |
+
+`make help` lists every target. The end-to-end `make demo` arrives with the streaming
+milestones; see the [roadmap](#roadmap).
 
 ## Planned tech stack
 
@@ -150,7 +177,7 @@ tests/                unit and integration tests
 
 | Milestone | Scope | Status |
 |-----------|-------|--------|
-| M1 Foundation | Repo skeleton, tooling, CI, docker-compose (Kafka + LocalStack), config and logging | Planned |
+| M1 Foundation | Repo skeleton, tooling, CI, docker-compose (Kafka + LocalStack), config and logging | Done |
 | M2 Ingestion | OpenSky, schedule and METAR clients, producers, contracts, fixtures | Planned |
 | M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Planned |
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Planned |
