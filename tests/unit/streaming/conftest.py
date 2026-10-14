@@ -1,3 +1,5 @@
+import os
+import time
 from collections.abc import Iterator
 
 import pytest
@@ -8,7 +10,14 @@ from skypulse.streaming.session import Connectors, build_session
 
 
 @pytest.fixture(scope="session")
-def spark() -> Iterator[SparkSession]:
+def utc_process() -> None:
+    """collect() renders timestamps in the Python process time zone; pin it."""
+    os.environ["TZ"] = "UTC"
+    time.tzset()
+
+
+@pytest.fixture(scope="session")
+def spark(utc_process: None) -> Iterator[SparkSession]:
     session = build_session("skypulse-tests", Settings(), Connectors(), master="local[2]")
     session.sparkContext.setLogLevel("ERROR")
     yield session
