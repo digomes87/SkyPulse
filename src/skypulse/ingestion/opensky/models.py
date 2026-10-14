@@ -1,6 +1,6 @@
 """OpenSky Network payloads turned into contract-shaped events."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -111,3 +111,22 @@ class ObservedFlight:
     def to_event(self, source: EventSource, produced_at: datetime) -> Event:
         natural_key = f"{self.data['icao24']}|{self.data['first_seen']}"
         return Event.create(EventType.OBSERVED_FLIGHT, source, natural_key, self.data, produced_at)
+
+
+@dataclass(frozen=True)
+class StateSnapshot:
+    """All state vectors returned by one /states/all call."""
+
+    states: tuple[AircraftState, ...]
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "StateSnapshot":
+        rows = payload.get("states") or []
+        snapshot_time = int(payload["time"])
+        return cls(tuple(AircraftState.from_row(row, snapshot_time) for row in rows))
+
+    def __len__(self) -> int:
+        return len(self.states)
+
+    def __iter__(self) -> Iterator[AircraftState]:
+        return iter(self.states)
