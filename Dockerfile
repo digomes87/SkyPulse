@@ -37,4 +37,18 @@ USER skypulse
 RUN python -c "from skypulse.common.config import Settings; \
 from skypulse.streaming.session import Connectors, build_session; \
 build_session('warmup', Settings(), Connectors(kafka=True, s3a=True), master='local[1]').stop()"
+# Replay fixtures (reference CSVs) for replay mode; last so code changes keep the package layer.
+COPY data/fixtures ./data/fixtures
 ENTRYPOINT ["python", "-m", "skypulse.streaming"]
+
+FROM base AS dbt
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --group dbt --no-install-project
+COPY dbt ./dbt
+WORKDIR /app/dbt
+RUN dbt deps
+# Gold tables live in a DuckDB file on a mounted volume (see docker-compose).
+ENV SKYPULSE_DUCKDB_PATH=/gold/skypulse.duckdb
+RUN mkdir /gold && chown skypulse /gold
+USER skypulse
+ENTRYPOINT ["dbt"]

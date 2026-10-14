@@ -9,6 +9,9 @@
 .env.*
 docs
 tests
+dbt/target
+dbt/dbt_packages
+dbt/logs
 scripts
 notebooks
 infra
