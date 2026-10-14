@@ -1,5 +1,5 @@
-# Local target: DuckDB reading the silver Delta tables in place (delta extension).
-# A Databricks target is added with the AWS deployment (M8).
+# Local target: DuckDB reading the silver Delta tables in place (delta extension), from a
+# local path or from S3 (LocalStack in containers). A Databricks target is added in M8.
 skypulse:
   target: local
   outputs:
@@ -7,6 +7,14 @@ skypulse:
       type: duckdb
       path: "{{ env_var('SKYPULSE_DUCKDB_PATH', 'target/skypulse.duckdb') }}"
       threads: 4
-      extensions: [delta]
+      extensions: [delta, httpfs]
       settings:
         TimeZone: UTC
+      secrets:
+        - type: s3
+          key_id: "{{ env_var('AWS_ACCESS_KEY_ID', 'test') }}"
+          secret: "{{ env_var('AWS_SECRET_ACCESS_KEY', 'test') }}"
+          region: "{{ env_var('SKYPULSE_AWS__REGION', 'eu-west-1') }}"
+          endpoint: "{{ env_var('SKYPULSE_S3_ENDPOINT', 's3.amazonaws.com') }}"
+          url_style: "{{ env_var('SKYPULSE_S3_URL_STYLE', 'vhost') }}"
+          use_ssl: "{{ env_var('SKYPULSE_S3_USE_SSL', 'true') }}"

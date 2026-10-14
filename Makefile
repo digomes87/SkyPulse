@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: lake dbt-build dbt-docs site help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
+.PHONY: lake dbt-build dbt-docs site airflow airflow-validate help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -98,3 +98,15 @@ dbt-docs: ## Generate dbt docs into dbt/target
 
 site: ## Build the static site (landing, insights, dbt docs) into public/
 	uv run python -m skypulse.site.build --gold dbt/target/skypulse.duckdb --dbt-target dbt/target --out public
+
+ORCHESTRATION := $(COMPOSE) --profile orchestration --profile pipeline
+
+airflow: up ## Build the images and start Airflow (UI on http://localhost:8088)
+	$(ORCHESTRATION) build
+	$(COMPOSE) --profile orchestration up -d --wait airflow-apiserver airflow-scheduler airflow-dag-processor airflow-triggerer
+
+airflow-validate: ## Check the DAGs inside the Airflow image (imports, schedule, retries, order)
+	$(COMPOSE) --profile orchestration build airflow-init
+	docker run --rm -v $(CURDIR)/airflow:/opt/airflow/project:ro \
+		-v $(CURDIR)/airflow/dags:/opt/airflow/dags:ro \
+		skypulse-airflow:local python /opt/airflow/project/tests/validate_dags.py

@@ -149,6 +149,16 @@ jobs:
         if: always()
         run: make clean
 
+  airflow:
+    name: airflow
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate the DAGs inside the Airflow image
+        run: make airflow-validate
+
   images:
     name: images
     needs: checks
