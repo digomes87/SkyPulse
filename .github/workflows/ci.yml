@@ -25,15 +25,49 @@ jobs:
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
           ./actionlint -color
 
-      - name: Set up uv
-        if: hashFiles('pyproject.toml') != ''
-        uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
-      - name: Lint, type check and test
-        if: hashFiles('pyproject.toml') != ''
-        run: |
-          uv sync --frozen
-          uv run ruff check .
-          uv run ruff format --check .
-          uv run mypy src
-          uv run pytest
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: make lint
+
+      - name: Type check
+        run: make typecheck
+
+      - name: Unit tests
+        run: make test
+
+  integration:
+    name: integration
+    needs: checks
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Start local stack
+        run: make up
+
+      - name: Integration tests
+        run: make test-integration
+
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop local stack
+        if: always()
+        run: make clean
