@@ -25,8 +25,9 @@ OPENSKY_CREDITS = Gauge(
 HTTP_RETRIES = Counter("skypulse_http_retries", "HTTP requests retried", ["host"])
 
 
-def start_metrics_server(settings: Settings) -> bool:
-    if settings.metrics.port is None:
+def start_metrics_server(settings: Settings, default_port: int | None = None) -> bool:
+    port = settings.metrics.port or default_port
+    if port is None:
         return False
-    start_http_server(settings.metrics.port)
+    start_http_server(port)
     return True
