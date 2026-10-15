@@ -96,6 +96,15 @@ class IngestionSettings(BaseModel):
     metar_interval_seconds: float = Field(default=600.0, gt=0)
 
 
+class MetricsSettings(BaseModel):
+    """Prometheus: a scrape port for long-running processes, a Pushgateway for batch runs."""
+
+    model_config = ConfigDict(frozen=True)
+
+    port: int | None = Field(default=None, ge=1024, le=65535)
+    pushgateway: str | None = None
+
+
 class SparkSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -135,6 +144,7 @@ class Settings(BaseSettings):
     events: EventsSettings = EventsSettings()
     reference: ReferenceSettings = ReferenceSettings()
     spark: SparkSettings = SparkSettings()
+    metrics: MetricsSettings = MetricsSettings()
 
     @model_validator(mode="after")
     def _forbid_endpoint_override_on_aws(self) -> Self:

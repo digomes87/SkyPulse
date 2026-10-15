@@ -7,6 +7,7 @@ from skypulse.common.config import Settings
 from skypulse.common.logging import configure_logging
 from skypulse.ingestion.runner import Schedule, run_periodically
 from skypulse.ingestion.wiring import Feed, Wiring
+from skypulse.observability.metrics import start_metrics_server
 
 
 def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
@@ -21,6 +22,7 @@ async def main(argv: list[str] | None = None) -> int:
     arguments = parse_arguments(argv)
     settings = Settings()
     configure_logging(settings.log_level)
+    start_metrics_server(settings)
     wiring = Wiring.from_settings(settings)
     feed: Feed = arguments.feed
     schedule = Schedule(arguments.interval or feed.interval(settings), arguments.cycles)

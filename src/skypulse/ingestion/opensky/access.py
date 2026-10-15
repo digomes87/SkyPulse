@@ -14,6 +14,7 @@ import httpx
 from pydantic import SecretStr
 
 from skypulse.common.clock import Clock
+from skypulse.observability.metrics import OPENSKY_CREDITS
 
 TOKEN_URL = (
     "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
@@ -98,6 +99,7 @@ class CreditTracker:
         if value is None or not value.isdigit():
             return
         self._remaining = int(value)
+        OPENSKY_CREDITS.set(self._remaining)
 
     def ensure_affordable(self, cost: int) -> None:
         if self._remaining is None or self._remaining >= cost:
