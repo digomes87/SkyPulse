@@ -16,8 +16,9 @@ from pydantic import SecretStr
 from skypulse.common.clock import Clock
 from skypulse.observability.metrics import OPENSKY_CREDITS
 
+# An endpoint, not a credential.
 TOKEN_URL = (
-    "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+    "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"  # noqa: S105
 )
 REFRESH_MARGIN = timedelta(seconds=30)
 REMAINING_HEADER = "X-Rate-Limit-Remaining"

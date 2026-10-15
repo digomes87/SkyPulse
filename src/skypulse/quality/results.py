@@ -6,7 +6,7 @@ from enum import StrEnum
 
 
 class Status(StrEnum):
-    PASS = "pass"
+    PASS = "pass"  # noqa: S105 - a status, not a password
     FAIL = "fail"
     SKIP = "skip"
 

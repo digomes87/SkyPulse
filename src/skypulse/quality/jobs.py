@@ -60,7 +60,7 @@ def check_gold(database: Path) -> QualityReport:
     report = QualityReport()
     with duckdb.connect(str(database), read_only=True) as connection:
         for table, suite in GOLD_SUITES.items():
-            frame = connection.sql(f"select * from {GOLD_SCHEMA}.{table}").df()
+            frame = connection.table(f"{GOLD_SCHEMA}.{table}").df()
             report = report.merged_with(
                 list(runner.validate_pandas(f"gold.{table}", frame, suite()))
             )

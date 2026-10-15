@@ -45,6 +45,7 @@ dev = [
     "types-jsonschema>=4.26.0.20261006",
 ]
 quality = [
+    "duckdb>=1.5,<1.6",
     "great-expectations>=1.20,<1.24",
 ]
 
@@ -63,13 +64,13 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "ARG", "TID", "DTZ", "T20"]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "ARG", "TID", "DTZ", "T20", "S"]
 ignore = ["PLR2004"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "ARG", "PLR0913"]
-"scripts/**" = ["T20"]
-"airflow/tests/**" = ["T20"]
+"tests/**" = ["PLR2004", "ARG", "PLR0913", "S101", "S603", "S608"]
+"scripts/**" = ["T20", "S311"]
+"airflow/tests/**" = ["T20", "S101"]
 
 [tool.mypy]
 strict = true

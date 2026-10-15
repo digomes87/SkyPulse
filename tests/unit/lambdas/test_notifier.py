@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from skypulse.lambdas.notifier import process_batch
+from skypulse.lambdas.notifier import process_batch, webhook_sender
 from tests.unit.lambdas.messages import disruption, sqs_record
 
 
@@ -32,3 +32,8 @@ def test_webhook_failures_are_retried_through_the_queue() -> None:
 
 def test_without_webhook_only_logs() -> None:
     assert process_batch([sqs_record(disruption())], None) == {"batchItemFailures": []}
+
+
+def test_webhooks_must_be_http() -> None:
+    with pytest.raises(ValueError, match="http"):
+        webhook_sender("file:///etc/passwd")
