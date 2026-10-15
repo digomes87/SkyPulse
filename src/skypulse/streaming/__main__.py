@@ -8,6 +8,7 @@ from pyspark.sql.streaming.query import StreamingQuery
 
 from skypulse.common.config import Settings
 from skypulse.common.logging import configure_logging, get_logger
+from skypulse.observability.streaming import push_metrics
 from skypulse.streaming.announcements import sns_announcer
 from skypulse.streaming.bronze import start_bronze
 from skypulse.streaming.detector import start_detector
@@ -64,6 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     _log.info("streaming_started", stage=str(stage), queries=[query.name for query in queries])
     for query in queries:
         query.awaitTermination()
+    push_metrics(settings, f"streaming_{stage}")
     return 0
 
 
