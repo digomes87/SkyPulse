@@ -99,6 +99,10 @@ def dashboard(uid: str, title: str, description: str, panels: Sequence[Panel]) -
     }
 
 
+# Counts of bad things read 0 rather than "No data" before the first one happens.
+ZERO_IF_ABSENT = " or vector(0)"
+
+
 def _stat(
     title: str,
     expr: str,
@@ -106,9 +110,10 @@ def _stat(
     red_above: float | None = None,
     description: str = "",
 ) -> Panel:
+    query = Query(expr + ZERO_IF_ABSENT if red_above is not None else expr)
     return Panel(
         title,
-        (Query(expr),),
+        (query,),
         "stat",
         unit,
         width=6,

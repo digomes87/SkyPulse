@@ -31,7 +31,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(skypulse_table_freshness_sla_breached)",
+          "expr": "sum(skypulse_table_freshness_sla_breached) or vector(0)",
           "legendFormat": "",
           "datasource": {
             "type": "prometheus",
@@ -86,7 +86,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(skypulse_quality_checks_failed)",
+          "expr": "sum(skypulse_quality_checks_failed) or vector(0)",
           "legendFormat": "",
           "datasource": {
             "type": "prometheus",
@@ -141,7 +141,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(skypulse_dlq_messages)",
+          "expr": "sum(skypulse_dlq_messages) or vector(0)",
           "legendFormat": "",
           "datasource": {
             "type": "prometheus",

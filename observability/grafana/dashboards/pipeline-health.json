@@ -74,7 +74,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(skypulse_events_rejected_total[1h]))",
+          "expr": "sum(increase(skypulse_events_rejected_total[1h])) or vector(0)",
           "legendFormat": "",
           "datasource": {
             "type": "prometheus",
@@ -129,7 +129,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(skypulse_poll_failures_total[1h]))",
+          "expr": "sum(increase(skypulse_poll_failures_total[1h])) or vector(0)",
           "legendFormat": "",
           "datasource": {
             "type": "prometheus",
