@@ -35,6 +35,7 @@ dev = [
     "boto3>=1.35",
     "hypothesis>=6.169.1",
     "mypy>=1.13",
+    "pandas-stubs>=3.0.5.260914",
     "pre-commit>=4.0",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
@@ -97,3 +98,8 @@ branch = true
 fail_under = 80
 show_missing = true
 skip_covered = true
+
+[[tool.mypy.overrides]]
+# Great Expectations re-exports its public API without __all__.
+module = ["great_expectations", "great_expectations.*"]
+implicit_reexport = true
