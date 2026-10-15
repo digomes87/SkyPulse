@@ -1,0 +1,26 @@
+# Scrape targets on the local stack (compose profiles observability, pipeline).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: pushgateway
+    honor_labels: true # keep the job/instance labels batch runs pushed with
+    static_configs:
+      - targets: ["pushgateway:9091"]
+
+  - job_name: exporter
+    static_configs:
+      - targets: ["exporter:9465"]
+
+  - job_name: producers
+    static_configs:
+      - targets: ["producer-states:9464", "producer-schedules:9464", "producer-metar:9464"]
+
+  - job_name: streaming
+    static_configs:
+      - targets: ["spark-bronze:9466", "spark-silver:9466"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

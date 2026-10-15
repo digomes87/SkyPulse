@@ -14,6 +14,7 @@ RESULTS_SCHEMA = (
     "run_at string, stage string, suite string, check string, status string, "
     "observed double, threshold double, details string"
 )
+QUALITY_METRICS = ("skypulse_quality_check_status", "skypulse_quality_checks_failed")
 STATUS_VALUE = {Status.PASS: 1.0, Status.FAIL: 0.0, Status.SKIP: -1.0}
 
 

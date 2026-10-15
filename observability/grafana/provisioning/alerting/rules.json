@@ -1,0 +1,209 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "skypulse",
+      "folder": "SkyPulse",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "freshness-sla-breach",
+          "title": "Table freshness SLA breached",
+          "condition": "C",
+          "for": "10m",
+          "labels": {
+            "team": "data-platform"
+          },
+          "annotations": {
+            "summary": "A lake table has not changed within its freshness SLA.",
+            "runbook_url": "docs/runbooks/freshness-sla-breach.md"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "sum(skypulse_table_freshness_sla_breached)",
+                "instant": true
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "quality-gate-failure",
+          "title": "Quality checks failing",
+          "condition": "C",
+          "for": "0m",
+          "labels": {
+            "team": "data-platform"
+          },
+          "annotations": {
+            "summary": "A data quality suite failed; downstream tasks were stopped.",
+            "runbook_url": "docs/runbooks/quality-gate-failure.md"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "sum(skypulse_quality_checks_failed)",
+                "instant": true
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "sqs-dead-letter-redrive",
+          "title": "Messages in a dead-letter queue",
+          "condition": "C",
+          "for": "5m",
+          "labels": {
+            "team": "data-platform"
+          },
+          "annotations": {
+            "summary": "Disruption messages failed three times and wait in a DLQ.",
+            "runbook_url": "docs/runbooks/sqs-dead-letter-redrive.md"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "sum(skypulse_dlq_messages)",
+                "instant": true
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "uid": "kafka-lag",
+          "title": "Streaming is falling behind Kafka",
+          "condition": "C",
+          "for": "15m",
+          "labels": {
+            "team": "data-platform"
+          },
+          "annotations": {
+            "summary": "A streaming query is more than 10k offsets behind.",
+            "runbook_url": "docs/runbooks/kafka-lag.md"
+          },
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "expr": "max(skypulse_stream_offsets_behind_latest)",
+                "instant": true
+              }
+            },
+            {
+              "refId": "C",
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        10000
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
