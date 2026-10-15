@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -100,3 +102,16 @@ def test_a_failing_probe_does_not_stop_the_others(settings: Settings) -> None:
     Exporter(settings, BrokenSqs(), FakeDynamo(), FakeConsumer()).collect_once()
 
     assert gauge("skypulse_eu261_claims") == 26
+
+
+def test_exporter_imports_without_spark() -> None:
+    """The exporter runs in the producer image, which has no pyspark or delta-spark."""
+    code = (
+        "import sys; sys.modules['pyspark'] = None; sys.modules['delta'] = None; "
+        "import skypulse.observability.exporter"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], check=False, capture_output=True, text=True
+    )
+
+    assert result.returncode == 0, result.stderr

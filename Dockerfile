@@ -7,6 +7,7 @@ FROM python:3.12-slim-bookworm AS base
 COPY --from=ghcr.io/astral-sh/uv:0.8.8 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NO_CACHE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH" \
     SKYPULSE_INGESTION__FIXTURES_DIR=/app/data/fixtures

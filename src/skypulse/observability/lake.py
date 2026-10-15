@@ -7,7 +7,7 @@ from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
 
 from skypulse.common.config import LakeLayer, Settings
-from skypulse.streaming.silver import SILVER_TABLES
+from skypulse.streaming.tables import SILVER_TABLES
 
 EXTRA_SILVER_TABLES = (
     "flight_disruptions",
