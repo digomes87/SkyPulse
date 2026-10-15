@@ -133,6 +133,8 @@ make down
 | Kafka (from the host) | `localhost:9092` |
 | DynamoDB claims (via LocalStack) | `make claims` |
 | Airflow (`make airflow`) | http://localhost:8088 |
+| Grafana (`make observability`) | http://localhost:3000 |
+| Prometheus | http://localhost:9090 |
 | LocalStack (AWS APIs) | `http://localhost:4566` |
 
 Run the producers against recorded fixtures (no API keys needed):
@@ -212,7 +214,7 @@ tests/                unit and integration tests
 | M3 Streaming lakehouse | Bronze/silver Delta jobs, watermarks, dedup, MERGE, end-to-end test | Done |
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Done |
 | M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Done |
-| M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Planned |
+| M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Done |
 | M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Planned |
 | M8 AWS + Databricks | Terraform modules, Kinesis mode, Glue/Athena, cost doc | Planned |
 | M9 Storytelling | Dashboard, notebooks, screenshots, demo | Planned |
