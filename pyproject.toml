@@ -5,9 +5,12 @@ description = "Real-time flight disruption and EU261 exposure platform for Europ
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "boto3>=1.35",
     "confluent-kafka>=2.16.0",
+    "deltalake>=1.4,<1.7",
     "httpx>=0.28.1",
     "jsonschema>=4.26.0",
+    "prometheus-client>=0.22",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "rfc3339-validator>=0.1.4",
@@ -38,6 +41,9 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.8",
     "types-jsonschema>=4.26.0.20261006",
+]
+quality = [
+    "great-expectations>=1.20,<1.24",
 ]
 
 [build-system]
