@@ -2,11 +2,12 @@
 
 from datetime import datetime
 
-from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+from prometheus_client import CollectorRegistry, Gauge
 from pyspark.sql import SparkSession
 
 from skypulse.common.clock import utc_iso
 from skypulse.common.config import LakeLayer, Settings
+from skypulse.observability.metrics import push_registry
 from skypulse.quality.results import QualityReport, Status
 
 RESULTS_TABLE = "quality_results"
@@ -52,5 +53,4 @@ def publish_results(settings: Settings, stage: str, report: QualityReport) -> bo
     for result in report:
         status.labels(result.suite, result.check).set(STATUS_VALUE[result.status])
     failed.set(len(report.failures()))
-    push_to_gateway(settings.metrics.pushgateway, job=f"quality_{stage}", registry=registry)
-    return True
+    return push_registry(settings, f"quality_{stage}", registry)

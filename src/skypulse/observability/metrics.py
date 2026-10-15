@@ -4,9 +4,20 @@ Long-running processes (producers, continuous streaming) expose them on
 ``SKYPULSE_METRICS__PORT``; batch runs push to ``SKYPULSE_METRICS__PUSHGATEWAY``.
 """
 
-from prometheus_client import Counter, Gauge, Histogram, start_http_server
+from prometheus_client import (
+    REGISTRY,
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    push_to_gateway,
+    start_http_server,
+)
 
 from skypulse.common.config import Settings
+from skypulse.common.logging import get_logger
+
+_log = get_logger(__name__)
 
 EVENTS_PUBLISHED = Counter("skypulse_events_published", "Events published to the stream", ["feed"])
 EVENTS_REJECTED = Counter(
@@ -30,4 +41,18 @@ def start_metrics_server(settings: Settings, default_port: int | None = None) ->
     if port is None:
         return False
     start_http_server(port)
+    return True
+
+
+def push_registry(settings: Settings, job: str, registry: CollectorRegistry = REGISTRY) -> bool:
+    """Best effort: a missing Pushgateway is logged, never allowed to fail the run."""
+    if settings.metrics.pushgateway is None:
+        return False
+    try:
+        push_to_gateway(settings.metrics.pushgateway, job=job, registry=registry)
+    except OSError as error:
+        _log.warning(
+            "metrics_push_failed", gateway=settings.metrics.pushgateway, job=job, error=str(error)
+        )
+        return False
     return True

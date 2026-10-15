@@ -79,7 +79,7 @@ def test_listener_records_real_micro_batches(
 def test_push_only_with_a_pushgateway(monkeypatch: pytest.MonkeyPatch) -> None:
     pushed: list[str] = []
     monkeypatch.setattr(
-        "skypulse.observability.streaming.push_to_gateway",
+        "skypulse.observability.metrics.push_to_gateway",
         lambda gateway, job, registry: pushed.append(job),
     )
 

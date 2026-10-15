@@ -7,7 +7,7 @@ from skypulse.common.http import RetryingHttp, RetryPolicy
 from skypulse.ingestion.opensky.access import CreditTracker
 from skypulse.ingestion.publisher import PublishReport
 from skypulse.ingestion.runner import run_cycle
-from skypulse.observability.metrics import start_metrics_server
+from skypulse.observability.metrics import push_registry, start_metrics_server
 
 
 def sample(name: str, labels: dict[str, str] | None = None) -> float:
@@ -72,3 +72,9 @@ def test_metrics_server_only_starts_when_a_port_is_configured(
     monkeypatch.setenv("SKYPULSE_METRICS__PORT", "9464")
     assert start_metrics_server(Settings()) is True
     assert started == [9464]
+
+
+def test_an_unreachable_pushgateway_never_fails_the_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SKYPULSE_METRICS__PUSHGATEWAY", "localhost:1")
+
+    assert push_registry(Settings(), "test_job") is False

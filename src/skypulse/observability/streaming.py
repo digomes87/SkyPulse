@@ -8,7 +8,7 @@ checkpoint, not in a Kafka consumer group, so a lag exporter would see nothing.
 from datetime import UTC, datetime
 from typing import Any
 
-from prometheus_client import REGISTRY, Counter, Gauge, push_to_gateway
+from prometheus_client import Counter, Gauge
 from pyspark.sql.streaming.listener import (
     QueryIdleEvent,
     QueryProgressEvent,
@@ -18,6 +18,7 @@ from pyspark.sql.streaming.listener import (
 )
 
 from skypulse.common.config import Settings
+from skypulse.observability.metrics import push_registry
 
 LABELS = ["query"]
 INPUT_ROWS = Gauge("skypulse_stream_input_rows", "Rows in the last micro-batch", LABELS)
@@ -82,7 +83,4 @@ class MetricsListener(StreamingQueryListener):
 
 def push_metrics(settings: Settings, job: str) -> bool:
     """Batch-style runs end before Prometheus scrapes them, so they push instead."""
-    if settings.metrics.pushgateway is None:
-        return False
-    push_to_gateway(settings.metrics.pushgateway, job=job, registry=REGISTRY)
-    return True
+    return push_registry(settings, job)

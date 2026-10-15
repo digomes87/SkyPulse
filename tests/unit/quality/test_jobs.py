@@ -90,7 +90,8 @@ def test_results_are_appended_to_delta(spark: SparkSession, settings: Settings) 
 def test_results_are_pushed_when_a_gateway_is_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     pushed: list[str] = []
     monkeypatch.setattr(
-        "skypulse.quality.store.push_to_gateway", lambda gateway, job, registry: pushed.append(job)
+        "skypulse.observability.metrics.push_to_gateway",
+        lambda gateway, job, registry: pushed.append(job),
     )
     monkeypatch.setenv("SKYPULSE_METRICS__PUSHGATEWAY", "pushgateway:9091")
 
