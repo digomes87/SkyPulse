@@ -58,6 +58,12 @@ def build_session(
     )
     if master is not None:
         builder = builder.master(master)
+    if master is not None and master.startswith("local"):
+        # A laptop's hostname can resolve to an address it no longer has (VPN, new
+        # network); a local driver only ever needs the loopback interface.
+        builder = builder.config("spark.driver.bindAddress", "127.0.0.1").config(
+            "spark.driver.host", "127.0.0.1"
+        )
     if connectors.s3a:
         for key, value in _s3a_options(settings).items():
             builder = builder.config(key, value)
