@@ -28,10 +28,10 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends openjdk-17-jre-headless procps \
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --extra spark --no-install-project
+RUN uv sync --frozen --no-dev --extra spark --group quality --no-install-project
 COPY contracts ./contracts
 COPY src ./src
-RUN uv sync --frozen --no-dev --extra spark
+RUN uv sync --frozen --no-dev --extra spark --group quality
 USER skypulse
 # Resolve Delta, Kafka and S3A packages at build time so containers start offline.
 RUN python -c "from skypulse.common.config import Settings; \

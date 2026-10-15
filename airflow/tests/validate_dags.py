@@ -11,13 +11,16 @@ from airflow.dag_processing.dagbag import DagBag
 DAGS_FOLDER = "/opt/airflow/dags"
 
 EXPECTED_DAGS = {"reference_data", "metar_refresh", "lake_to_gold", "lake_maintenance"}
-LAKE_TO_GOLD_ORDER = [
-    "bronze",
-    "silver",
-    "detect_disruptions",
-    "recompute_assessments",
-    "dbt_build",
-]
+LAKE_TO_GOLD_UPSTREAM = {
+    "bronze": set(),
+    "silver": {"bronze"},
+    "quality_silver": {"silver"},
+    "detect_disruptions": {"quality_silver"},
+    "recompute_assessments": {"detect_disruptions"},
+    "dbt_build": {"recompute_assessments"},
+    "quality_gold": {"dbt_build"},
+    "quality_statistics": {"dbt_build"},
+}
 
 
 def problems(bag: DagBag) -> list[str]:
@@ -34,9 +37,14 @@ def problems(bag: DagBag) -> list[str]:
         )
     lake = bag.dags.get("lake_to_gold")
     if lake is not None:
-        order = [task.task_id for task in lake.topological_sort()]
-        if order != LAKE_TO_GOLD_ORDER:
-            found.append(f"lake_to_gold order is {order}")
+        upstream = {task.task_id: set(task.upstream_task_ids) for task in lake.tasks}
+        if upstream != LAKE_TO_GOLD_UPSTREAM:
+            found.append(f"lake_to_gold dependencies are {upstream}")
+    found.extend(
+        f"{dag_id} has no failure alert"
+        for dag_id, dag in bag.dags.items()
+        if any(task.on_failure_callback is None for task in dag.tasks)
+    )
     return found
 
 
