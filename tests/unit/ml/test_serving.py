@@ -93,3 +93,20 @@ def test_metrics_are_exposed(model: LoadedModel) -> None:
 
     assert "skypulse_api_requests_total" in metrics
     assert "skypulse_api_predicted_probability" in metrics
+
+
+def test_the_champion_is_reloaded_when_the_refresh_interval_passes(model: LoadedModel) -> None:
+    versions = iter([LoadedModel(model.model, "1"), LoadedModel(model.model, "2")])
+    now = [0.0]
+    service = Service(
+        lambda: next(versions), Statistics.empty, refresh_seconds=60, clock=lambda: now[0]
+    )
+
+    service.start()
+    service.refresh_if_due()
+    assert service.model is not None
+    assert service.model.version == "1"
+
+    now[0] = 61.0
+    service.refresh_if_due()
+    assert service.model.version == "2"

@@ -128,18 +128,44 @@ def statistics_loader(settings: Settings) -> StatisticsLoader:
     return load
 
 
+REFRESH_SECONDS = 600.0
+
+
 class Service:
-    def __init__(self, load_model: ModelLoader, load_statistics: StatisticsLoader) -> None:
+    """Holds the champion and the statistics; reloads both every ``refresh_seconds``,
+    so a newly promoted model is picked up without restarting the container."""
+
+    def __init__(
+        self,
+        load_model: ModelLoader,
+        load_statistics: StatisticsLoader,
+        refresh_seconds: float = REFRESH_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._load_model = load_model
         self._load_statistics = load_statistics
+        self._refresh_seconds = refresh_seconds
+        self._clock = clock
+        self._loaded_at = -float("inf")
         self.model: LoadedModel | None = None
         self.statistics = Statistics.empty()
 
     def start(self) -> None:
         self.model = self._load_model()
         self.statistics = self._load_statistics()
+        self._loaded_at = self._clock()
+
+    def refresh_if_due(self) -> None:
+        if self._clock() - self._loaded_at < self._refresh_seconds:
+            return
+        previous = self.model.version if self.model else None
+        self.start()
+        current = self.model.version if self.model else None
+        if current != previous:
+            _log.info("model_reloaded", previous=previous, current=current)
 
     def predict(self, request: PredictionRequest) -> PredictionResponse:
+        self.refresh_if_due()
         if self.model is None:
             raise HTTPException(status_code=503, detail="no model loaded")
         features = request.query().features(self.statistics)
@@ -167,6 +193,7 @@ def create_app(service: Service) -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, str]:
+        service.refresh_if_due()
         if service.model is None:
             REQUESTS.labels("health", "503").inc()
             raise HTTPException(status_code=503, detail="no model loaded")
