@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: lake dbt-build dbt-docs site airflow airflow-validate observability dashboards quality ml-history ml-features ml-train model-api help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
+.PHONY: lake dbt-build dbt-docs site airflow airflow-validate observability dashboards quality ml-history ml-features ml-train ml-train-stack model-api help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -133,6 +133,13 @@ ml-features: ## Rebuild the point-in-time feature table
 
 ml-train: ## Train, register and gate-promote the delay model (local SQLite MLflow)
 	$(ML_ENV) uv run python -m skypulse.ml.train
+
+# MLflow 3 hands out presigned S3 URLs that name LocalStack by its compose hostname, so
+# training against the stack's registry runs in a container on the stack's network.
+ml-train-stack: ## Train against the stack's MLflow (inside the ml image, lake mounted)
+	$(COMPOSE) --profile ml up -d --build --wait mlflow
+	$(COMPOSE) --profile ml run --rm --no-deps -v $(LAKE_ROOT):/lake:ro \
+		-e SKYPULSE_LAKE__ROOT_URI=file:///lake --entrypoint python model-api -m skypulse.ml.train
 
 model-api: up ## Start MLflow (http://localhost:5001) and the prediction API (http://localhost:8000/docs)
 	$(COMPOSE) --profile ml up -d --build --wait mlflow model-api
