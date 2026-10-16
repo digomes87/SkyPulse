@@ -8,6 +8,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.8 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_CACHE=1 \
+    MLFLOW_DISABLE_AGENT_HINT=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH" \
     SKYPULSE_INGESTION__FIXTURES_DIR=/app/data/fixtures
@@ -53,3 +54,15 @@ RUN dbt deps
 # Gold tables live in a DuckDB file on a mounted volume (see docker-compose).
 ENV SKYPULSE_DUCKDB_PATH=/gold/skypulse.duckdb
 ENTRYPOINT ["dbt"]
+
+FROM base AS ml
+# LightGBM needs the OpenMP runtime.
+RUN apt-get update && apt-get install --yes --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --group ml --no-install-project
+COPY contracts ./contracts
+COPY src ./src
+RUN uv sync --frozen --no-dev --group ml
+USER skypulse
+EXPOSE 8000
+ENTRYPOINT ["python", "-m", "skypulse.ml.serving"]
