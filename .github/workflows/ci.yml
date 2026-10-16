@@ -165,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [producer, spark]
+        target: [producer, spark, ml]
     steps:
       - uses: actions/checkout@v4
 

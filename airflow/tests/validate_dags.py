@@ -10,7 +10,13 @@ from airflow.dag_processing.dagbag import DagBag
 
 DAGS_FOLDER = "/opt/airflow/dags"
 
-EXPECTED_DAGS = {"reference_data", "metar_refresh", "lake_to_gold", "lake_maintenance"}
+EXPECTED_DAGS = {
+    "reference_data",
+    "metar_refresh",
+    "lake_to_gold",
+    "lake_maintenance",
+    "model_retraining",
+}
 LAKE_TO_GOLD_UPSTREAM = {
     "bronze": set(),
     "silver": {"bronze"},
@@ -35,6 +41,11 @@ def problems(bag: DagBag) -> list[str]:
         found.extend(
             f"{dag_id}.{task.task_id} has no retries" for task in dag.tasks if not task.retries
         )
+    retraining = bag.dags.get("model_retraining")
+    if retraining is not None and retraining.get_task("train_and_promote").upstream_task_ids != {
+        "build_features"
+    }:
+        found.append("model_retraining must build features before training")
     lake = bag.dags.get("lake_to_gold")
     if lake is not None:
         upstream = {task.task_id: set(task.upstream_task_ids) for task in lake.tasks}

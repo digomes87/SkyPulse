@@ -8,6 +8,9 @@ from pyspark.sql import SparkSession
 from skypulse.common.config import Settings
 from skypulse.streaming.session import Connectors, build_session
 
+# MLflow prints an advert for its tracing skill on import; keep test output clean.
+os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
+
 
 @pytest.fixture(scope="session")
 def utc_process() -> None:

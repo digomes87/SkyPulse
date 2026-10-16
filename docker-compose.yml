@@ -34,6 +34,7 @@ x-airflow: &airflow
     SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
     SKYPULSE_SILVER_ROOT: s3://skypulse-silver
     SKYPULSE_METRICS__PUSHGATEWAY: pushgateway:9091
+    SKYPULSE_ML__TRACKING_URI: http://mlflow:5000
     SKYPULSE_S3_ENDPOINT: localstack:4566
     SKYPULSE_S3_URL_STYLE: path
     SKYPULSE_S3_USE_SSL: "false"
@@ -249,6 +250,42 @@ services:
     environment: *pipeline-env
     entrypoint: ["python", "-m", "skypulse.observability.exporter"]
 
+  # --- ml (profile "ml"): tracking, registry and the prediction API -----------------------
+
+  mlflow:
+    profiles: ["ml", "orchestration"]
+    build: { context: infra/mlflow }
+    image: skypulse-mlflow:local
+    container_name: skypulse-mlflow
+    depends_on:
+      localstack: { condition: service_healthy }
+    ports:
+      - "${SKYPULSE_MLFLOW_PORT:-5001}:5000"
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: eu-west-1
+    volumes:
+      - mlflow-data:/mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      retries: 18
+
+  model-api:
+    profiles: ["ml"]
+    build: { context: ., target: ml }
+    image: skypulse-ml:local
+    container_name: skypulse-model-api
+    depends_on:
+      mlflow: { condition: service_healthy }
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *pipeline-env
+      SKYPULSE_ML__TRACKING_URI: http://mlflow:5000
+
   # --- pipeline (profile "pipeline"): replay producers and streaming jobs -----------------
   # Only one service per image builds it; the others reuse the tag.
 
@@ -283,3 +320,4 @@ volumes:
   airflow-db:
   gold:
   prometheus-data:
+  mlflow-data:

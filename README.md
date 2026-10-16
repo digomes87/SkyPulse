@@ -135,6 +135,8 @@ make down
 | Airflow (`make airflow`) | http://localhost:8088 |
 | Grafana (`make observability`) | http://localhost:3000 |
 | Prometheus | http://localhost:9090 |
+| MLflow (`make model-api`) | http://localhost:5001 |
+| Prediction API | http://localhost:8000/docs |
 | LocalStack (AWS APIs) | `http://localhost:4566` |
 
 Run the producers against recorded fixtures (no API keys needed):
@@ -215,7 +217,7 @@ tests/                unit and integration tests
 | M4 EU261 + events | Rules engine, delay detector, SNS/SQS/Lambda/DynamoDB, DLQs | Done |
 | M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Done |
 | M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Done |
-| M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Planned |
+| M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Done |
 | M8 AWS + Databricks | Terraform modules, Kinesis mode, Glue/Athena, cost doc | Planned |
 | M9 Storytelling | Dashboard, notebooks, screenshots, demo | Planned |
 

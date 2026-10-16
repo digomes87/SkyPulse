@@ -37,12 +37,19 @@ dev = [
     "mypy>=1.13",
     "pandas-stubs>=3.0.5.260914",
     "pre-commit>=4.0",
-    "pyarrow>=26.0.0",
+    "pyarrow>=15",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
     "ruff>=0.8",
     "types-jsonschema>=4.26.0.20261006",
+]
+ml = [
+    "fastapi>=0.135,<0.143",
+    "lightgbm>=4.6,<4.8",
+    "mlflow>=3.10,<3.17",
+    "scikit-learn>=1.6,<1.10",
+    "uvicorn>=0.35,<0.55",
 ]
 quality = [
     "duckdb>=1.5,<1.6",
@@ -79,7 +86,7 @@ mypy_path = "src"
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["confluent_kafka.*", "boto3.*", "delta.*"]
+module = ["confluent_kafka.*", "boto3.*", "delta.*", "sklearn.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
