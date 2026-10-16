@@ -6,8 +6,6 @@ from typing import Any
 
 import duckdb
 
-GOLD = "main_gold"
-
 
 @dataclass(frozen=True)
 class Headline:
@@ -81,50 +79,50 @@ class Gold:
 
 DELAY_BAND_ORDER = ("on_time", "15_to_59", "60_to_179", "180_plus", "cancelled")
 
-_HEADLINE = f"""
+_HEADLINE = """
 select
-    (select count(*) from {GOLD}.fct_flight),
-    (select count(*) from {GOLD}.fct_flight where delay_band not in ('on_time', 'not_arrived')),
-    (select count(*) from {GOLD}.fct_eu261_claim where is_eligible),
+    (select count(*) from main_gold.fct_flight),
+    (select count(*) from main_gold.fct_flight where delay_band not in ('on_time', 'not_arrived')),
+    (select count(*) from main_gold.fct_eu261_claim where is_eligible),
     (select cast(coalesce(sum(case when is_eligible then amount_eur end), 0) as double)
-        from {GOLD}.fct_eu261_claim),
-    (select cast(coalesce(sum(expected_payout_eur), 0) as double) from {GOLD}.fct_eu261_claim),
-    (select cast(coalesce(sum(likely_exempt_eur), 0) as double) from {GOLD}.fct_eu261_claim),
-    (select count(*) from {GOLD}.fct_aircraft_position)
+        from main_gold.fct_eu261_claim),
+    (select cast(coalesce(sum(expected_payout_eur), 0) as double) from main_gold.fct_eu261_claim),
+    (select cast(coalesce(sum(likely_exempt_eur), 0) as double) from main_gold.fct_eu261_claim),
+    (select count(*) from main_gold.fct_aircraft_position)
 """
-_AIRLINES = f"""
+_AIRLINES = """
 select airline_icao, coalesce(airline_name, airline_icao), flights,
        cast(expected_payout_eur as double), cast(likely_exempt_eur as double)
-from {GOLD}.agg_eu261_exposure_by_airline
+from main_gold.agg_eu261_exposure_by_airline
 order by expected_payout_eur + likely_exempt_eur desc, airline_icao
 """
-_AIRPORTS = f"""
+_AIRPORTS = """
 select delays.airport_icao, coalesce(airports.airport_name, delays.airport_icao),
        sum(delays.departures),
        cast(sum(delays.avg_departure_delay_minutes * delays.departures)
             / sum(delays.departures) as double),
        cast(avg(delays.on_time_rate) as double)
-from {GOLD}.agg_airport_daily_delays as delays
-left join {GOLD}.dim_airport as airports using (airport_icao)
+from main_gold.agg_airport_daily_delays as delays
+left join main_gold.dim_airport as airports using (airport_icao)
 group by 1, 2
 order by 4 desc
 """
-_BANDS = f"select delay_band, count(*) from {GOLD}.fct_flight group by 1"
-_CLAIMS = f"""
+_BANDS = "select delay_band, count(*) from main_gold.fct_flight group by 1"
+_CLAIMS = """
 select flight_number, origin_icao || ' → ' || destination_icao, disruption_kind,
        arrival_delay_minutes, cast(amount_eur as double), nullif(severe_weather, '')
-from {GOLD}.fct_eu261_claim
+from main_gold.fct_eu261_claim
 where is_eligible or extraordinary_circumstances_likely
 order by amount_eur desc, flight_number
 """
-_POSITIONS = f"""
+_POSITIONS = """
 select cast(longitude as double), cast(latitude as double), on_ground
-from {GOLD}.fct_aircraft_position
+from main_gold.fct_aircraft_position
 """
-_HUBS = f"""
+_HUBS = """
 select airport_icao, cast(longitude as double), cast(latitude as double)
-from {GOLD}.dim_airport
-where airport_icao in (select origin_icao from {GOLD}.fct_flight)
+from main_gold.dim_airport
+where airport_icao in (select origin_icao from main_gold.fct_flight)
   and longitude between -30 and 45
 order by airport_icao
 """

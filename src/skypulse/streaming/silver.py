@@ -13,81 +13,31 @@ Rows later than the watermark are dropped by the deduplication state and never r
 silver. They stay in bronze, where a batch backfill can pick them up.
 """
 
-from dataclasses import dataclass
-
 from delta.tables import DeltaTable
 from pyspark.sql import Column, DataFrame, SparkSession, Window, functions
 
 from skypulse.common.config import LakeLayer, Settings
 from skypulse.contracts import SCHEMA_VERSION, EventType
-from skypulse.ingestion.publisher import DEFAULT_ROUTES
 from skypulse.streaming.schemas import event_schema, required_data_fields
+from skypulse.streaming.tables import SILVER_TABLES, EventTiming, MergePolicy, SilverTable
+
+__all__ = [
+    "SILVER_TABLES",
+    "EventTiming",
+    "MergePolicy",
+    "SilverTable",
+    "deduplicated",
+    "latest_per_key",
+    "merge_into",
+    "parse",
+    "quarantine_path",
+    "quarantined_rows",
+    "silver_path",
+    "valid_rows",
+]
 
 QUARANTINE_TABLE = "quarantine"
 LINEAGE_COLUMNS = ("correlation_id", "topic", "partition", "offset", "ingested_at")
-
-
-@dataclass(frozen=True)
-class EventTiming:
-    """Which column is event time and how late an event may arrive."""
-
-    expression: str
-    watermark: str
-
-
-@dataclass(frozen=True)
-class MergePolicy:
-    """Natural key, and the column that decides whether an update is newer (None: insert-only)."""
-
-    keys: tuple[str, ...]
-    newer_by: str | None = None
-
-    def condition(self) -> str:
-        return " AND ".join(f"target.{key} <=> source.{key}" for key in self.keys)
-
-    def update_condition(self) -> str | None:
-        if self.newer_by is None:
-            return None
-        return f"source.{self.newer_by} > target.{self.newer_by}"
-
-
-@dataclass(frozen=True)
-class SilverTable:
-    name: str
-    event_type: EventType
-    timing: EventTiming
-    policy: MergePolicy
-
-    def topic(self) -> str:
-        return str(DEFAULT_ROUTES.topic_for(self.event_type))
-
-
-SILVER_TABLES = (
-    SilverTable(
-        "aircraft_states",
-        EventType.AIRCRAFT_STATE,
-        EventTiming("timestamp_seconds(last_contact)", "10 minutes"),
-        MergePolicy(("icao24", "last_contact")),
-    ),
-    SilverTable(
-        "observed_flights",
-        EventType.OBSERVED_FLIGHT,
-        EventTiming("first_seen", "2 days"),
-        MergePolicy(("icao24", "callsign", "first_seen"), newer_by="last_seen"),
-    ),
-    SilverTable(
-        "flight_schedules",
-        EventType.FLIGHT_SCHEDULE,
-        EventTiming("observed_at", "1 hour"),
-        MergePolicy(("flight_number", "scheduled_departure_utc"), newer_by="observed_at"),
-    ),
-    SilverTable(
-        "metar_observations",
-        EventType.METAR_OBSERVATION,
-        EventTiming("observed_at", "3 hours"),
-        MergePolicy(("station_icao", "observed_at", "report_type")),
-    ),
-)
 
 
 def _violations(event_type: EventType) -> Column:

@@ -3,6 +3,7 @@ name: skypulse
 # Local mode stack. Later milestones add Spark, Airflow, MLflow and observability services.
 
 x-pipeline-env: &pipeline-env
+  SKYPULSE_METRICS__PUSHGATEWAY: pushgateway:9091
   SKYPULSE_INGESTION__REPLAY: "true"
   SKYPULSE_KAFKA__BOOTSTRAP_SERVERS: kafka:19092
   SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
@@ -32,6 +33,7 @@ x-airflow: &airflow
     SKYPULSE_KAFKA__BOOTSTRAP_SERVERS: kafka:19092
     SKYPULSE_AWS__ENDPOINT_URL: http://localstack:4566
     SKYPULSE_SILVER_ROOT: s3://skypulse-silver
+    SKYPULSE_METRICS__PUSHGATEWAY: pushgateway:9091
     SKYPULSE_S3_ENDPOINT: localstack:4566
     SKYPULSE_S3_URL_STYLE: path
     SKYPULSE_S3_USE_SSL: "false"
@@ -202,31 +204,82 @@ services:
       - gold:/gold
     command: ["build"]
 
+  # --- observability (profile "observability"): metrics, dashboards, alerts --------------
+
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:v3.12.0
+    container_name: skypulse-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  pushgateway:
+    profiles: ["observability", "orchestration"]
+    image: prom/pushgateway:v1.11.3
+    container_name: skypulse-pushgateway
+    ports:
+      - "9091:9091"
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:12.4.0
+    container_name: skypulse-grafana
+    depends_on: [prometheus]
+    ports:
+      - "${SKYPULSE_GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_PASSWORD: ${SKYPULSE_GRAFANA_ADMIN_PASSWORD:-skypulse-local}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/pipeline-health.json
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  exporter:
+    profiles: ["observability"]
+    image: skypulse-producer:local
+    container_name: skypulse-exporter
+    depends_on:
+      kafka: { condition: service_healthy }
+      localstack: { condition: service_healthy }
+    environment: *pipeline-env
+    entrypoint: ["python", "-m", "skypulse.observability.exporter"]
+
   # --- pipeline (profile "pipeline"): replay producers and streaming jobs -----------------
   # Only one service per image builds it; the others reuse the tag.
 
   producer-states:
     <<: *producer
     build: { context: ., target: producer }
+    environment: { <<: *pipeline-env, SKYPULSE_METRICS__PORT: "9464" }
     command: ["states"]
 
   producer-schedules:
     <<: *producer
+    environment: { <<: *pipeline-env, SKYPULSE_METRICS__PORT: "9464" }
     command: ["schedules"]
 
   producer-metar:
     <<: *producer
+    environment: { <<: *pipeline-env, SKYPULSE_METRICS__PORT: "9464" }
     command: ["metar"]
 
   spark-bronze:
     <<: *spark
     build: { context: ., target: spark }
+    environment: { <<: *pipeline-env, SKYPULSE_METRICS__PORT: "9466" }
     command: ["bronze", "--master", "local[2]"]
 
   spark-silver:
     <<: *spark
+    environment: { <<: *pipeline-env, SKYPULSE_METRICS__PORT: "9466" }
     command: ["silver", "--master", "local[2]"]
 
 volumes:
   airflow-db:
   gold:
+  prometheus-data:

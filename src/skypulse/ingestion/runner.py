@@ -12,6 +12,12 @@ from skypulse.common.http import Sleep
 from skypulse.common.logging import get_logger
 from skypulse.ingestion.opensky.access import CreditsExhaustedError
 from skypulse.ingestion.pollers import Poller
+from skypulse.observability.metrics import (
+    EVENTS_PUBLISHED,
+    EVENTS_REJECTED,
+    POLL_DURATION,
+    POLL_FAILURES,
+)
 
 CREDITS_BACKOFF_SECONDS = 900.0
 
@@ -29,15 +35,19 @@ class Schedule:
 
 async def run_cycle(name: str, poller: Poller) -> float | None:
     """Runs one cycle and returns a back-off override when the cycle could not run."""
-    with correlation_scope():
+    with correlation_scope(), POLL_DURATION.labels(name).time():
         try:
             report = await poller.run_once()
         except CreditsExhaustedError as error:
             _log.warning("poll_out_of_credits", poller=name, reason=str(error))
+            POLL_FAILURES.labels(name).inc()
             return CREDITS_BACKOFF_SECONDS
         except Exception:
             _log.exception("poll_failed", poller=name)
+            POLL_FAILURES.labels(name).inc()
             return None
+        EVENTS_PUBLISHED.labels(name).inc(report.published)
+        EVENTS_REJECTED.labels(name).inc(report.rejected)
         _log.info(
             "poll_completed",
             poller=name,

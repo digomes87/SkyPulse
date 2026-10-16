@@ -1,5 +1,8 @@
 """Streaming queries that move data bronze -> silver."""
 
+import time
+from collections.abc import Callable
+
 from delta.tables import DeltaTable
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.streaming.query import StreamingQuery
@@ -17,6 +20,24 @@ from skypulse.streaming.silver import (
     valid_rows,
 )
 from skypulse.streaming.triggers import Trigger
+
+TABLE_WAIT_SECONDS = 600.0
+TABLE_POLL_SECONDS = 5.0
+
+
+def wait_for_table(
+    spark: SparkSession,
+    path: str,
+    timeout_seconds: float = TABLE_WAIT_SECONDS,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    """Continuous stages can start before their upstream table exists; wait for it."""
+    waited = 0.0
+    while not DeltaTable.isDeltaTable(spark, path):
+        if waited >= timeout_seconds:
+            raise TimeoutError(f"{path} did not appear within {timeout_seconds:.0f}s")
+        sleep(TABLE_POLL_SECONDS)
+        waited += TABLE_POLL_SECONDS
 
 
 def _bronze_stream(spark: SparkSession, settings: Settings) -> DataFrame:

@@ -6,6 +6,7 @@ payload is POSTed there (for example a Slack incoming webhook or a test endpoint
 
 import json
 import os
+import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping
 from typing import Any
@@ -32,13 +33,19 @@ def notification(disruption: Disruption) -> dict[str, Any]:
     }
 
 
+ALLOWED_SCHEMES = ("https", "http")
+
+
 def webhook_sender(url: str) -> Sender:
+    if urllib.parse.urlparse(url).scheme not in ALLOWED_SCHEMES:
+        raise ValueError(f"webhook must be http(s): {url!r}")
+
     def send(payload: Mapping[str, Any]) -> None:
         body = json.dumps(payload).encode()
-        request = urllib.request.Request(
+        request = urllib.request.Request(  # noqa: S310 - scheme checked above
             url, data=body, headers={"Content-Type": "application/json"}, method="POST"
         )
-        with urllib.request.urlopen(request, timeout=WEBHOOK_TIMEOUT_SECONDS):
+        with urllib.request.urlopen(request, timeout=WEBHOOK_TIMEOUT_SECONDS):  # noqa: S310
             return
 
     return send

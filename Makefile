@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: lake dbt-build dbt-docs site airflow airflow-validate help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
+.PHONY: lake dbt-build dbt-docs site airflow airflow-validate observability dashboards quality help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -110,3 +110,15 @@ airflow-validate: ## Check the DAGs inside the Airflow image (imports, schedule,
 	docker run --rm -v $(CURDIR)/airflow:/opt/airflow/project:ro \
 		-v $(CURDIR)/airflow/dags:/opt/airflow/dags:ro \
 		skypulse-airflow:local python /opt/airflow/project/tests/validate_dags.py
+
+observability: up ## Start Prometheus, Pushgateway, Grafana (http://localhost:3000) and the exporter
+	$(COMPOSE) --profile pipeline build producer-states
+	$(COMPOSE) --profile observability up -d --wait prometheus pushgateway grafana exporter
+
+dashboards: ## Regenerate the Grafana dashboards and alert rules from code
+	uv run python -m skypulse.observability.dashboards
+
+quality: ## Run the silver, gold and statistics quality stages on the local lake
+	$(LAKE_ENV) uv run python -m skypulse.quality silver $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.quality gold $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.quality statistics $(SPARK_LOCAL)

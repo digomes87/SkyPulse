@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import httpx
 
 from skypulse.common.logging import get_logger
+from skypulse.observability.metrics import HTTP_RETRIES
 
 RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 RETRY_AFTER_HEADERS = ("Retry-After", "X-Rate-Limit-Retry-After-Seconds")
@@ -101,6 +102,7 @@ class RetryingHttp:
             return
         delay = self._delay(attempt, outcome)
         _log.warning("http_retry", url=url, attempt=attempt, delay_seconds=delay, reason=failure)
+        HTTP_RETRIES.labels(httpx.URL(url).host).inc()
         await self._sleep(delay)
 
     def _delay(self, attempt: int, outcome: httpx.Response | Exception) -> float:

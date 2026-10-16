@@ -5,9 +5,12 @@ description = "Real-time flight disruption and EU261 exposure platform for Europ
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "boto3>=1.35",
     "confluent-kafka>=2.16.0",
+    "deltalake>=1.4,<1.7",
     "httpx>=0.28.1",
     "jsonschema>=4.26.0",
+    "prometheus-client>=0.22",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "rfc3339-validator>=0.1.4",
@@ -32,12 +35,18 @@ dev = [
     "boto3>=1.35",
     "hypothesis>=6.169.1",
     "mypy>=1.13",
+    "pandas-stubs>=3.0.5.260914",
     "pre-commit>=4.0",
+    "pyarrow>=26.0.0",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
     "ruff>=0.8",
     "types-jsonschema>=4.26.0.20261006",
+]
+quality = [
+    "duckdb>=1.5,<1.6",
+    "great-expectations>=1.20,<1.24",
 ]
 
 [build-system]
@@ -55,13 +64,13 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "ARG", "TID", "DTZ", "T20"]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "N", "PL", "PT", "RET", "ARG", "TID", "DTZ", "T20", "S"]
 ignore = ["PLR2004"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "ARG", "PLR0913"]
-"scripts/**" = ["T20"]
-"airflow/tests/**" = ["T20"]
+"tests/**" = ["PLR2004", "ARG", "PLR0913", "S101", "S603", "S608"]
+"scripts/**" = ["T20", "S311"]
+"airflow/tests/**" = ["T20", "S101"]
 
 [tool.mypy]
 strict = true
@@ -91,3 +100,8 @@ branch = true
 fail_under = 80
 show_missing = true
 skip_covered = true
+
+[[tool.mypy.overrides]]
+# Great Expectations re-exports its public API without __all__.
+module = ["great_expectations", "great_expectations.*"]
+implicit_reexport = true
