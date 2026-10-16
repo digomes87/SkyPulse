@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose
 
-.PHONY: lake dbt-build dbt-docs site airflow airflow-validate observability dashboards quality help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
+.PHONY: lake dbt-build dbt-docs site airflow airflow-validate observability dashboards quality ml-history ml-features ml-train model-api help install lint fmt typecheck test test-integration ci up down logs ps clean demo lambdas claims
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -122,3 +122,17 @@ quality: ## Run the silver, gold and statistics quality stages on the local lake
 	$(LAKE_ENV) uv run python -m skypulse.quality silver $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.quality gold $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.quality statistics $(SPARK_LOCAL)
+
+ML_ENV := $(LAKE_ENV) SKYPULSE_ML__TRACKING_URI=sqlite:///$(CURDIR)/data/mlflow.db MLFLOW_DISABLE_AGENT_HINT=1
+
+ml-history: ## Backfill 120 days of synthetic history into the local lake (bronze -> silver)
+	$(LAKE_ENV) uv run python -m skypulse.ml.pipeline backfill --days 120 $(SPARK_LOCAL)
+
+ml-features: ## Rebuild the point-in-time feature table
+	$(LAKE_ENV) uv run python -m skypulse.ml.pipeline features $(SPARK_LOCAL)
+
+ml-train: ## Train, register and gate-promote the delay model (local SQLite MLflow)
+	$(ML_ENV) uv run python -m skypulse.ml.train
+
+model-api: up ## Start MLflow (http://localhost:5001) and the prediction API (http://localhost:8000/docs)
+	$(COMPOSE) --profile ml up -d --build --wait mlflow model-api

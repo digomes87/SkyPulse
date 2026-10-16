@@ -19,6 +19,7 @@ from docker.types import Mount
 SPARK_IMAGE = "skypulse-spark:local"
 PRODUCER_IMAGE = "skypulse-producer:local"
 DBT_IMAGE = "skypulse-dbt:local"
+ML_IMAGE = "skypulse-ml:local"
 GOLD_VOLUME = "skypulse_gold"
 PASSED_THROUGH = ("SKYPULSE_", "AWS_")
 SPARK_MASTER = ["--master", "local[2]"]
@@ -102,6 +103,19 @@ def quality_task(task_id: str, stage: str) -> DockerOperator:
     operator = container_task(task_id, SPARK_IMAGE, command, mounts=[gold])
     operator.entrypoint = ["python"]
     operator.environment = {**operator.environment, "SKYPULSE_DUCKDB_PATH": GOLD_DATABASE}
+    return operator
+
+
+def ml_feature_task(task_id: str) -> DockerOperator:
+    command = ["-m", "skypulse.ml.pipeline", "features", *SPARK_MASTER]
+    operator = container_task(task_id, SPARK_IMAGE, command)
+    operator.entrypoint = ["python"]
+    return operator
+
+
+def ml_training_task(task_id: str) -> DockerOperator:
+    operator = container_task(task_id, ML_IMAGE, ["-m", "skypulse.ml.train"])
+    operator.entrypoint = ["python"]
     return operator
 
 
