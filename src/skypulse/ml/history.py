@@ -225,8 +225,12 @@ class ScheduledFlight:
 
     def outcome(self, conditions: Conditions, rng: random.Random) -> dict[str, Any]:
         disruption = rng.expovariate(1 / 150) if rng.random() < 0.03 else 0.0
+        # Storms don't add a fixed delay: most flights wait a while, a few wait for hours.
+        storm_tail = rng.expovariate(1 / 80) if conditions.origin.thunderstorm() else 0.0
         noise = rng.expovariate(1 / 12) - 8
-        delay = max(-15.0, self.base_delay() + conditions.delay_minutes() + noise + disruption)
+        delay = max(
+            -15.0, self.base_delay() + conditions.delay_minutes() + noise + disruption + storm_tail
+        )
         cancelled = rng.random() < conditions.cancellation_rate()
         scheduled_arrival = self.departure + self.route.block
         actual_departure = None if cancelled else self.departure + timedelta(minutes=round(delay))

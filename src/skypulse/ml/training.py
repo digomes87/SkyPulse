@@ -35,6 +35,12 @@ PARAMETERS: Mapping[str, Any] = {
     "seed": 1014,
     "deterministic": True,
 }
+# The 180-minute label is rare (a few percent of flights): smaller leaves let the trees
+# isolate the handful of storm days that drive it.
+LABEL_PARAMETERS: Mapping[str, Mapping[str, Any]] = {
+    "delayed_15": {},
+    "delayed_180": {"min_data_in_leaf": 10, "num_leaves": 15},
+}
 NUM_BOOST_ROUND = 600
 EARLY_STOPPING_ROUNDS = 40
 
@@ -84,7 +90,7 @@ def _fit(train: pd.DataFrame, label: str, preprocessor: Preprocessor) -> lightgb
     )
     stopping = lightgbm.Dataset(preprocessor.transform(stop), stop[label], reference=training)
     return lightgbm.train(
-        dict(PARAMETERS),
+        {**PARAMETERS, **LABEL_PARAMETERS[label]},
         training,
         num_boost_round=NUM_BOOST_ROUND,
         valid_sets=[stopping],

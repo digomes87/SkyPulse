@@ -18,7 +18,7 @@ from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 
 from skypulse.common.config import Settings
-from skypulse.ml.feature_spec import FEATURE_SET_VERSION, FEATURES
+from skypulse.ml.feature_spec import FEATURE_SET_VERSION, FEATURES, NUMERIC_FEATURES
 from skypulse.ml.model import DelayModel
 from skypulse.ml.training import PARAMETERS, TrainingResult, score
 
@@ -36,7 +36,9 @@ def _finite(metrics: Mapping[str, float]) -> dict[str, float]:
 def log_and_register(result: TrainingResult, settings: Settings, data_version: int | None) -> str:
     mlflow.set_tracking_uri(settings.ml.tracking_uri)
     mlflow.set_experiment(settings.ml.experiment)
-    example = result.split.validation[list(FEATURES)].head(5)
+    example = result.split.validation[list(FEATURES)].head(5).copy()
+    # Numeric features are floats at inference (missing values become NaN), not ints.
+    example[list(NUMERIC_FEATURES)] = example[list(NUMERIC_FEATURES)].astype("float64")
     with mlflow.start_run() as run:
         mlflow.log_params({**PARAMETERS, "feature_set_version": FEATURE_SET_VERSION})
         mlflow.log_metrics(_finite(result.metrics))
