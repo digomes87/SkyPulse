@@ -32,5 +32,9 @@ NUMERIC_FEATURES = (
 )
 FEATURES = (*CATEGORICAL_FEATURES, *NUMERIC_FEATURES)
 
+# Present-weather groups, matched the same way offline (Spark rlike) and online (re.search).
+THUNDERSTORM_PATTERN = "TS"
+PRECIPITATION_PATTERN = "RA|SN|DZ|PL|GR"
+
 LABELS = {"delayed_15": 15, "delayed_180": 180}
 KEY_COLUMNS = ("flight_number", "scheduled_departure_utc")

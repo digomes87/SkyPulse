@@ -22,7 +22,9 @@ from skypulse.ml.feature_spec import (
     HISTORY_WINDOW_DAYS,
     KEY_COLUMNS,
     LABELS,
+    PRECIPITATION_PATTERN,
     PREDICTION_LEAD,
+    THUNDERSTORM_PATTERN,
     WEATHER_LOOKBACK,
 )
 from skypulse.streaming.disruptions import reference_airports
@@ -87,11 +89,13 @@ def _latest_weather(
         functions.col("visibility_m").alias(f"{prefix}_visibility_m"),
         functions.col("wind_speed_kt").alias(f"{prefix}_wind_kt"),
         functions.coalesce("wind_gust_kt", functions.lit(0)).alias(f"{prefix}_gust_kt"),
-        functions.coalesce(functions.col("present_weather").contains("TS"), functions.lit(False))
+        functions.coalesce(
+            functions.col("present_weather").rlike(THUNDERSTORM_PATTERN), functions.lit(False)
+        )
         .cast("int")
         .alias(f"{prefix}_thunderstorm"),
         functions.coalesce(
-            functions.col("present_weather").rlike("RA|SN|DZ|PL|GR"), functions.lit(False)
+            functions.col("present_weather").rlike(PRECIPITATION_PATTERN), functions.lit(False)
         )
         .cast("int")
         .alias(f"{prefix}_precipitation"),
