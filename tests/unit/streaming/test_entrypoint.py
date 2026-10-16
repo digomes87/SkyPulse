@@ -2,8 +2,10 @@ from pathlib import Path
 
 import pytest
 from pyspark.sql import SparkSession
+from pyspark.sql.streaming.query import StreamingQueryManager
 
 from skypulse.common.config import Settings
+from skypulse.observability.streaming import MetricsListener
 from skypulse.streaming.__main__ import Stage, instrument, parse_arguments
 from skypulse.streaming.jobs import wait_for_table
 
@@ -36,14 +38,17 @@ def test_instrument_registers_the_metrics_listener(
     spark: SparkSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     started: list[int] = []
+    added: list[object] = []
     monkeypatch.setattr("skypulse.observability.metrics.start_http_server", started.append)
+    monkeypatch.setattr(
+        StreamingQueryManager, "addListener", lambda self, listener: added.append(listener)
+    )
     monkeypatch.setenv("SKYPULSE_METRICS__PORT", "9466")
-    before = len(spark.sparkContext._jsc.sc().listenerBus().listeners())
 
     instrument(spark, Settings())
 
     assert started == [9466]
-    assert len(spark.sparkContext._jsc.sc().listenerBus().listeners()) > before
+    assert [type(listener) for listener in added] == [MetricsListener]
 
 
 @pytest.mark.spark
