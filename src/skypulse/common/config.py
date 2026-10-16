@@ -96,6 +96,14 @@ class IngestionSettings(BaseModel):
     metar_interval_seconds: float = Field(default=600.0, gt=0)
 
 
+class MlSettings(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    tracking_uri: str = "http://localhost:5001"
+    experiment: str = "skypulse-delay"
+    model_name: str = "skypulse-delay"
+
+
 class MetricsSettings(BaseModel):
     """Prometheus: a scrape port for long-running processes, a Pushgateway for batch runs."""
 
@@ -145,6 +153,7 @@ class Settings(BaseSettings):
     reference: ReferenceSettings = ReferenceSettings()
     spark: SparkSettings = SparkSettings()
     metrics: MetricsSettings = MetricsSettings()
+    ml: MlSettings = MlSettings()
 
     @model_validator(mode="after")
     def _forbid_endpoint_override_on_aws(self) -> Self:
