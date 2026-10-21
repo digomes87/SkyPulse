@@ -1,8 +1,8 @@
-"""Quality entrypoint: ``python -m skypulse.quality silver|gold|statistics``.
+"""Quality entrypoint: ``python -m skypulse.quality silver|gold|reconciliation|statistics``.
 
-``silver`` and ``gold`` are gates: any failed expectation exits non-zero so the
-orchestrator stops downstream tasks. ``statistics`` (freshness, volume, null drift) only
-reports: those are monitors with alerts, not gates.
+``silver``, ``gold`` and ``reconciliation`` are gates: any failed expectation exits non-zero
+so the orchestrator stops downstream tasks and alerts. ``statistics`` (freshness, volume,
+null drift) only reports: those are monitors with alerts, not gates.
 """
 
 import argparse
@@ -13,7 +13,12 @@ from pathlib import Path
 
 from skypulse.common.config import Settings
 from skypulse.common.logging import configure_logging, get_logger
-from skypulse.quality.jobs import check_gold, check_silver, check_statistics
+from skypulse.quality.jobs import (
+    check_gold,
+    check_reconciliation,
+    check_silver,
+    check_statistics,
+)
 from skypulse.quality.results import QualityGateError, QualityReport
 from skypulse.quality.store import publish_results, save_results
 from skypulse.streaming.session import Connectors, build_session
@@ -26,6 +31,7 @@ _log = get_logger(__name__)
 class Stage(StrEnum):
     SILVER = "silver"
     GOLD = "gold"
+    RECONCILIATION = "reconciliation"
     STATISTICS = "statistics"
 
     def is_gate(self) -> bool:
@@ -55,6 +61,9 @@ def run(stage: Stage, settings: Settings, arguments: argparse.Namespace) -> Qual
     reports = {
         Stage.SILVER: lambda: check_silver(spark, settings),
         Stage.GOLD: lambda: check_gold(arguments.gold_database),
+        Stage.RECONCILIATION: lambda: check_reconciliation(
+            spark, settings, arguments.gold_database, now
+        ),
         Stage.STATISTICS: lambda: check_statistics(spark, settings, now),
     }
     report = reports[stage]()
