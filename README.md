@@ -218,6 +218,7 @@ tests/                unit and integration tests
 | M5 Batch and modelling | Airflow DAGs, reference data, dbt gold models, dbt docs | Done |
 | M6 Quality and observability | Great Expectations, anomaly checks, Prometheus, Grafana, runbooks | Done |
 | M7 ML | Features, training, MLflow, FastAPI serving, retraining DAG, model card | Done |
+| M7.5 Data reliability | Late-event backfill from bronze, layer reconciliation, raw landing and screening of reference loads | Done |
 | M8 AWS + Databricks | Terraform modules, Kinesis mode, Glue/Athena, cost doc | Planned |
 | M9 Storytelling | Dashboard, notebooks, screenshots, demo | Planned |
 

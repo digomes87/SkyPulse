@@ -20,11 +20,13 @@ EXPECTED_DAGS = {
 LAKE_TO_GOLD_UPSTREAM = {
     "bronze": set(),
     "silver": {"bronze"},
-    "quality_silver": {"silver"},
+    "backfill_silver": {"silver"},
+    "quality_silver": {"backfill_silver"},
     "detect_disruptions": {"quality_silver"},
     "recompute_assessments": {"detect_disruptions"},
     "dbt_build": {"recompute_assessments"},
     "quality_gold": {"dbt_build"},
+    "quality_reconciliation": {"dbt_build"},
     "quality_statistics": {"dbt_build"},
 }
 

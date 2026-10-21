@@ -84,6 +84,7 @@ lake: up ## Build a local lake in data/lake from the replay fixtures (no contain
 	$(LAKE_ENV) SKYPULSE_INGESTION__REPLAY_START=2026-10-14T23:00:00Z uv run python -m skypulse.ingestion metar --cycles 1
 	$(LAKE_ENV) uv run python -m skypulse.streaming bronze --available-now $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.streaming silver --available-now $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.batch backfill $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.streaming detector --available-now $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.batch assessments $(SPARK_LOCAL)
 
@@ -118,9 +119,10 @@ observability: up ## Start Prometheus, Pushgateway, Grafana (http://localhost:30
 dashboards: ## Regenerate the Grafana dashboards and alert rules from code
 	uv run python -m skypulse.observability.dashboards
 
-quality: ## Run the silver, gold and statistics quality stages on the local lake
+quality: ## Run the silver, gold, reconciliation and statistics quality stages on the local lake
 	$(LAKE_ENV) uv run python -m skypulse.quality silver $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.quality gold $(SPARK_LOCAL)
+	$(LAKE_ENV) uv run python -m skypulse.quality reconciliation $(SPARK_LOCAL)
 	$(LAKE_ENV) uv run python -m skypulse.quality statistics $(SPARK_LOCAL)
 
 ML_ENV := $(LAKE_ENV) SKYPULSE_ML__TRACKING_URI=sqlite:///$(CURDIR)/data/mlflow.db MLFLOW_DISABLE_AGENT_HINT=1
