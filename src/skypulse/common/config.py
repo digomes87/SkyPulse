@@ -123,6 +123,12 @@ class ReferenceSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ourairports_base_url: str = "https://davidmegginson.github.io/ourairports-data"
+    min_row_ratio: float = Field(
+        default=0.9,
+        gt=0,
+        le=1,
+        description="A load is rejected when a table shrinks below this share of its rows.",
+    )
 
 
 class EventsSettings(BaseModel):

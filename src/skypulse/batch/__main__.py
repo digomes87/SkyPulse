@@ -1,6 +1,7 @@
 """Batch entrypoint: ``python -m skypulse.batch reference|assessments|maintenance``."""
 
 import argparse
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from skypulse.batch.assessments import recompute_assessments
@@ -32,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     connectors = Connectors(s3a=settings.lake.root_uri is None)
     spark = build_session(f"skypulse-{job}", settings, connectors, arguments.master)
     if job is Job.REFERENCE:
-        load_reference(spark, settings, file_reader(settings))
+        load_reference(spark, settings, file_reader(settings), datetime.now(UTC))
     if job is Job.ASSESSMENTS:
         recompute_assessments(spark, settings)
     if job is Job.MAINTENANCE:
