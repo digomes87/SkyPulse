@@ -11,6 +11,13 @@ from pyspark.sql import DataFrame, SparkSession, functions
 
 from skypulse.common.config import LakeLayer, Settings
 from skypulse.observability.lake import LakeTable, last_commit
+from skypulse.quality.reconciliation import (
+    GOLD_FACTS,
+    bronze_to_quarantine,
+    bronze_to_silver,
+    recent,
+    silver_to_gold,
+)
 from skypulse.quality.results import CheckResult, QualityReport, Status
 from skypulse.quality.runner import SuiteRunner
 from skypulse.quality.statistics import (
@@ -21,6 +28,8 @@ from skypulse.quality.statistics import (
     volume_anomaly,
 )
 from skypulse.quality.suites import GOLD_SUITES, SILVER_SUITES
+from skypulse.streaming.bronze import bronze_path
+from skypulse.streaming.silver import SILVER_TABLES, quarantine_path
 
 GOLD_SCHEMA = "main_gold"
 NULL_BASELINE_TABLE = "quality_null_baseline"
@@ -118,3 +127,51 @@ def check_statistics(spark: SparkSession, settings: Settings, now: datetime) -> 
     if counts:
         report = report.merged_with([volume_anomaly(counts[:-1], counts[-1]).result])
     return report.merged_with(_drift(spark, settings, schedules))
+
+
+def _bronze_reconciliation(
+    spark: SparkSession, settings: Settings, now: datetime
+) -> list[CheckResult]:
+    bronze = _read(spark, bronze_path(settings))
+    if bronze is None:
+        return [CheckResult("reconciliation", "bronze", Status.SKIP, details="no bronze yet")]
+    window = recent(bronze, now).cache()
+    quarantine = _read(spark, quarantine_path(settings))
+    results = [
+        check
+        for table in SILVER_TABLES
+        for check in (
+            bronze_to_silver(window, _read(spark, _silver(settings, table.name)), table),
+            bronze_to_quarantine(window, quarantine, table),
+        )
+    ]
+    window.unpersist()
+    return results
+
+
+def _gold_count(connection: duckdb.DuckDBPyConnection, table: str) -> int:
+    counted = connection.table(f"{GOLD_SCHEMA}.{table}").count("*").fetchone()
+    return 0 if counted is None else int(counted[0])
+
+
+def _gold_reconciliation(
+    spark: SparkSession, settings: Settings, database: Path
+) -> list[CheckResult]:
+    with duckdb.connect(str(database), read_only=True) as connection:
+        gold_rows = {fact.fact: _gold_count(connection, fact.fact) for fact in GOLD_FACTS}
+    results = []
+    for fact in GOLD_FACTS:
+        silver = _read(spark, _silver(settings, fact.silver_table))
+        silver_rows = 0 if silver is None else silver.count()
+        results.append(silver_to_gold(fact, silver_rows, gold_rows[fact.fact]))
+    return results
+
+
+def check_reconciliation(
+    spark: SparkSession, settings: Settings, database: Path, now: datetime
+) -> QualityReport:
+    return (
+        QualityReport()
+        .merged_with(_bronze_reconciliation(spark, settings, now))
+        .merged_with(_gold_reconciliation(spark, settings, database))
+    )

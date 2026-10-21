@@ -1,3 +1,5 @@
+import hashlib
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -7,8 +9,16 @@ from pyspark.sql import SparkSession
 from skypulse.batch.__main__ import Job, parse_arguments
 from skypulse.batch.assessments import assessments_path, latest_per_claim, recompute_assessments
 from skypulse.batch.maintenance import run_maintenance
-from skypulse.batch.reference import AIRPORTS_TABLE, file_reader, load_reference, reference_path
+from skypulse.batch.reference import (
+    AIRPORTS_TABLE,
+    COUNTRIES_TABLE,
+    file_reader,
+    load_reference,
+    raw_files_path,
+    reference_path,
+)
 from skypulse.common.config import Settings
+from skypulse.reference.screen import ReferenceScreenError
 from skypulse.streaming.detector import detect_batch
 from tests.unit.streaming.schedule_rows import at, schedule
 from tests.unit.streaming.test_detector import CollectingAnnouncer, change_feed
@@ -16,6 +26,7 @@ from tests.unit.streaming.test_detector import CollectingAnnouncer, change_feed
 pytestmark = pytest.mark.spark
 
 FIXTURES = Path(__file__).parents[3] / "data" / "fixtures"
+FETCHED_AT = datetime(2026, 10, 14, 6, 0, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -27,13 +38,46 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
 
 
 def test_reference_load_from_fixtures(spark: SparkSession, settings: Settings) -> None:
-    counts = load_reference(spark, settings, file_reader(settings))
+    counts = load_reference(spark, settings, file_reader(settings), FETCHED_AT)
 
     airports = spark.read.format("delta").load(reference_path(settings, AIRPORTS_TABLE))
     palma = airports.where("icao = 'LEPA'").first()
     assert counts[AIRPORTS_TABLE] > 800
     assert palma is not None
     assert palma["runway_headings"]
+
+
+def test_reference_files_are_landed_untouched_in_bronze(
+    spark: SparkSession, settings: Settings
+) -> None:
+    load_reference(spark, settings, file_reader(settings), FETCHED_AT)
+
+    landed = {
+        row["name"]: row
+        for row in spark.read.format("delta").load(raw_files_path(settings)).collect()
+    }
+    countries = (FIXTURES / "ourairports" / "countries.csv").read_text()
+    assert sorted(landed) == ["airports", "countries", "runways"]
+    assert landed["countries"]["content"] == countries
+    assert landed["countries"]["sha256"] == hashlib.sha256(countries.encode()).hexdigest()
+
+
+def test_a_truncated_download_is_rejected_and_keeps_the_current_tables(
+    spark: SparkSession, settings: Settings
+) -> None:
+    read = file_reader(settings)
+    load_reference(spark, settings, read, FETCHED_AT)
+
+    def truncated(name: str) -> str:
+        content = read(name)
+        return "\n".join(content.splitlines()[:50]) if name == "countries" else content
+
+    with pytest.raises(ReferenceScreenError, match="reference_countries has 49 rows"):
+        load_reference(spark, settings, truncated, FETCHED_AT)
+    countries = spark.read.format("delta").load(reference_path(settings, COUNTRIES_TABLE))
+    landed = spark.read.format("delta").load(raw_files_path(settings))
+    assert countries.count() > 200
+    assert landed.count() == 6
 
 
 def test_assessments_are_recomputed_from_announced_disruptions(

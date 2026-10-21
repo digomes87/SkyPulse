@@ -128,11 +128,12 @@ a claim is only replaced by a version detected later.
 
 ## Batch jobs (`skypulse.batch`)
 
-`python -m skypulse.batch reference|assessments|maintenance`, scheduled by Airflow.
+`python -m skypulse.batch reference|backfill|assessments|maintenance`, scheduled by Airflow.
 
 | Job | Reads | Writes | Notes |
 |-----|-------|--------|-------|
-| `reference` | OurAirports CSVs (fixtures in replay mode), curated airlines | `silver/reference_airports` (with runway headings), `reference_countries`, `reference_airlines` | Overwrite; the detector uses the runway headings for crosswind |
+| `reference` | OurAirports CSVs (fixtures in replay mode), curated airlines | `bronze/reference_files` (raw files, append), `silver/reference_airports` (with runway headings), `reference_countries`, `reference_airlines` | Land raw, screen row counts (no empty table, no shrink below `SKYPULSE_REFERENCE__MIN_ROW_RATIO` of the current rows), then overwrite; a rejected load leaves silver untouched. The detector uses the runway headings for crosswind |
+| `backfill` | `bronze/raw_events` ingested since the last run (minus 1 h overlap) | the four event silver tables | Recovers events the streaming watermark dropped with the same parse and idempotent MERGE; the cutoff lives in `checkpoints/backfill_state` and moves only on success; `--full` reprocesses all of bronze |
 | `assessments` | `silver/flight_disruptions` | `silver/eu261_assessments` | Maps the pure `skypulse.eu261` function over every disruption; a full recompute, so rule changes reach history |
 | `maintenance` | silver and bronze tables | same | OPTIMIZE with Z-order on query keys, VACUUM 7 days |
 
@@ -156,7 +157,7 @@ nothing but containers, images and networks.
 |-----|----------|-------|
 | `reference_data` | weekly | `skypulse.batch reference` |
 | `metar_refresh` | hourly | one METAR poll for every monitored airport |
-| `lake_to_gold` | hourly | bronze → silver → detector → EU261 assessments → `dbt build` |
+| `lake_to_gold` | hourly | bronze → silver → backfill → detector → EU261 assessments → `dbt build` → quality and reconciliation |
 | `lake_maintenance` | daily 03:00 UTC | OPTIMIZE + Z-order, VACUUM 7 days |
 
 Every task is idempotent (checkpoints, MERGE on natural keys, full recompute of
@@ -170,6 +171,7 @@ folder inside the real Airflow image in CI.
 |-------|-----------|------|---------------------|
 | `silver` | silver streaming | Great Expectations suites: formats, ranges, natural-key uniqueness | **Gate**: Airflow stops the detector and everything after it |
 | `gold` | `dbt build` | Suites on business distributions (cancellation share, median delay, claim amounts) | **Gate** for gold consumers |
+| `reconciliation` | `dbt build` | Bronze → silver (every valid event's natural key is in silver), bronze → quarantine (every invalid record is in quarantine), silver → gold (`fct_flight`, `fct_eu261_claim` keep one row per silver row); bronze over the last 24 h | **Gate**: fails the run and alerts; reported even when everything matches |
 | `statistics` | `dbt build` | Freshness SLAs, hourly volume anomaly (seasonal baseline, Poisson-floored z-score), null-rate drift against the previous run | **Monitor**: metrics and alerts, never blocks |
 
 dbt tests guard structure (keys, relationships, accepted values); the suites guard
@@ -180,8 +182,8 @@ plausibility. Every run is appended to `silver/quality_results` and pushed to Pr
 | Source | How | Metrics |
 |--------|-----|---------|
 | Producers | scrape `:9464` | events published and dead-lettered, poll duration and failures, HTTP retries, OpenSky credits |
-| Streaming jobs | `StreamingQueryListener`, scrape `:9466` or push | rows and rates, batch duration, watermark delay, offsets behind Kafka (lag) |
-| Batch and quality runs | Pushgateway | the same, plus check status and failed-check count |
+| Streaming jobs | `StreamingQueryListener`, scrape `:9466` or push | rows and rates, batch duration, watermark delay, offsets behind Kafka (lag), rows dropped by the watermark |
+| Batch and quality runs | Pushgateway | the same, plus check status, failed-check count and rows recovered by the backfill |
 | Exporter | scrape `:9465` | last commit per Delta table (delta-rs, no Spark), freshness SLA breaches, SQS DLQ depth, Kafka DLQ topic size, claims stored |
 
 Grafana (`make observability`, http://localhost:3000) provisions two dashboards and four

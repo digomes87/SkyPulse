@@ -59,9 +59,14 @@ including duplicates, which keeps replays and audits honest.
 
 An event later than the watermark is dropped by the streaming state and never reaches
 silver, but it is in bronze. `tests/unit/streaming/test_watermarks.py` pins both sides:
-inside the watermark it lands exactly once, beyond it it stays in bronze only. A batch
-backfill (Airflow, M5) can MERGE bronze into silver for a time range, using the same
-idempotent MERGE.
+inside the watermark it lands exactly once, beyond it it stays in bronze only.
+
+Dropped rows are counted (`skypulse_stream_late_rows_dropped`) and recovered by
+`python -m skypulse.batch backfill`, which `lake_to_gold` runs right after silver. It reads
+the bronze rows ingested since its last successful cutoff (with a one-hour overlap), parses
+them with the silver code, deduplicates on `event_id` and uses the same idempotent MERGE, so
+silver ends up complete and a rerun changes nothing. The reconciliation quality stage then
+checks that every valid bronze event of the last 24 hours has its natural key in silver.
 
 ## Consequences
 

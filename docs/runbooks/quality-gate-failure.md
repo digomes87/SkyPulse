@@ -2,8 +2,8 @@
 
 **Alert:** `Quality checks failing` (fires immediately)
 **Signal:** `skypulse_quality_checks_failed > 0`, pushed by `python -m skypulse.quality`.
-**Effect:** the Airflow task `quality_silver` or `quality_gold` failed, so downstream tasks
-did not run. Gold still shows the previous good build; nothing wrong was published.
+**Effect:** the Airflow task `quality_silver`, `quality_gold` or `quality_reconciliation`
+failed, so downstream tasks did not run. Gold still shows the previous good build; nothing wrong was published.
 
 ## 1. Which checks failed
 
@@ -28,6 +28,9 @@ did not run. Gold still shows the previous good build; nothing wrong was publish
 | `silver.*` compound uniqueness | Dedup or MERGE broken | Stop and investigate the streaming job before anything else |
 | `gold.fct_flight` cancellation share or median delay | Either a real disruption day or a feed problem | Compare with raw counts in bronze; if real, record it and widen the bound deliberately |
 | `gold.fct_eu261_claim` amounts | Rules engine or assessment bug | Reproduce with `skypulse.eu261.assess` on the claim's disruption payload |
+| `reconciliation.bronze_to_silver` | Valid events in bronze are not in silver: the backfill did not run or failed, or a streaming query is stuck | Check `backfill_silver` in the same run; run `python -m skypulse.batch backfill --full` and rerun the stage |
+| `reconciliation.bronze_to_quarantine` | Invalid records were neither loaded nor quarantined | The quarantine query is down or its checkpoint was reset; restart `silver` and inspect `silver/quarantine` |
+| `reconciliation.silver_to_gold` | A fact lost or multiplied rows against silver | A join or filter in the dbt model changed the grain; compare `dbt/models/marts` with the last good commit |
 
 Never relax a bound just to make the alert go away: change it in
 `src/skypulse/quality/suites.py` with a commit message explaining why.

@@ -470,6 +470,58 @@
     {
       "id": 11,
       "type": "timeseries",
+      "title": "Late rows: dropped by the watermark, recovered by the backfill",
+      "description": "Events later than a silver watermark stay in bronze; the hourly backfill MERGEs them into silver. Dropped and recovered should track each other.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (query) (increase(skypulse_stream_late_rows_dropped_total[1h]))",
+          "legendFormat": "dropped · {{query}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (table) (skypulse_backfill_recovered_rows)",
+          "legendFormat": "recovered · {{table}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#2a78d6"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
       "title": "HTTP retries per minute",
       "description": "",
       "datasource": {
@@ -478,7 +530,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 36,
         "w": 24,
         "h": 8
       },
