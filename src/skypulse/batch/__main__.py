@@ -1,10 +1,11 @@
-"""Batch entrypoint: ``python -m skypulse.batch reference|assessments|maintenance``."""
+"""Batch entrypoint: ``python -m skypulse.batch reference|backfill|assessments|maintenance``."""
 
 import argparse
 from datetime import UTC, datetime
 from enum import StrEnum
 
 from skypulse.batch.assessments import recompute_assessments
+from skypulse.batch.backfill import run_backfill
 from skypulse.batch.maintenance import run_maintenance
 from skypulse.batch.reference import file_reader, load_reference
 from skypulse.common.config import Settings
@@ -14,6 +15,7 @@ from skypulse.streaming.session import Connectors, build_session
 
 class Job(StrEnum):
     REFERENCE = "reference"
+    BACKFILL = "backfill"
     ASSESSMENTS = "assessments"
     MAINTENANCE = "maintenance"
 
@@ -22,6 +24,9 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="skypulse.batch", description=__doc__)
     parser.add_argument("job", type=Job, choices=list(Job))
     parser.add_argument("--master", default=None, help="Spark master, e.g. local[*]")
+    parser.add_argument(
+        "--full", action="store_true", help="backfill: reprocess all of bronze, not only new rows"
+    )
     return parser.parse_args(argv)
 
 
@@ -34,6 +39,8 @@ def main(argv: list[str] | None = None) -> int:
     spark = build_session(f"skypulse-{job}", settings, connectors, arguments.master)
     if job is Job.REFERENCE:
         load_reference(spark, settings, file_reader(settings), datetime.now(UTC))
+    if job is Job.BACKFILL:
+        run_backfill(spark, settings, datetime.now(UTC), full=arguments.full)
     if job is Job.ASSESSMENTS:
         recompute_assessments(spark, settings)
     if job is Job.MAINTENANCE:

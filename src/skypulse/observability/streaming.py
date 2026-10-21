@@ -31,6 +31,11 @@ OFFSETS_BEHIND = Gauge(
 WATERMARK_DELAY = Gauge(
     "skypulse_stream_watermark_delay_seconds", "Wall clock minus the event-time watermark", LABELS
 )
+LATE_ROWS_DROPPED = Counter(
+    "skypulse_stream_late_rows_dropped",
+    "Rows dropped for arriving after the watermark (recovered by the backfill job)",
+    LABELS,
+)
 BATCHES = Counter("skypulse_stream_batches", "Micro-batches completed", LABELS)
 TERMINATIONS = Counter("skypulse_stream_terminations", "Queries that stopped", ["query", "failed"])
 
@@ -50,6 +55,10 @@ def _watermark_delay(event_time: dict[str, str]) -> float | None:
     return (datetime.now(UTC) - moment).total_seconds()
 
 
+def _late_rows(operators: list[Any]) -> int:
+    return sum(int(operator.numRowsDroppedByWatermark or 0) for operator in operators)
+
+
 def record_progress(progress: Any) -> None:
     query = progress.name or str(progress.id)
     INPUT_ROWS.labels(query).set(progress.numInputRows)
@@ -60,6 +69,7 @@ def record_progress(progress: Any) -> None:
     delay = _watermark_delay(dict(progress.eventTime))
     if delay is not None:
         WATERMARK_DELAY.labels(query).set(delay)
+    LATE_ROWS_DROPPED.labels(query).inc(_late_rows(list(progress.stateOperators)))
     BATCHES.labels(query).inc()
 
 

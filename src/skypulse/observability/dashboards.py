@@ -176,6 +176,21 @@ PIPELINE_HEALTH = dashboard(
             unit="s",
         ),
         Panel(
+            "Late rows: dropped by the watermark, recovered by the backfill",
+            (
+                Query(
+                    "sum by (query) (increase(skypulse_stream_late_rows_dropped_total[1h]))",
+                    "dropped · {{query}}",
+                ),
+                Query("sum by (table) (skypulse_backfill_recovered_rows)", "recovered · {{table}}"),
+            ),
+            width=24,
+            description=(
+                "Events later than a silver watermark stay in bronze; the hourly backfill "
+                "MERGEs them into silver. Dropped and recovered should track each other."
+            ),
+        ),
+        Panel(
             "HTTP retries per minute",
             (Query("sum by (host) (rate(skypulse_http_retries_total[5m])) * 60", "{{host}}"),),
             width=24,

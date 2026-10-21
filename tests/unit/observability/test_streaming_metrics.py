@@ -20,7 +20,7 @@ def value(name: str, query: str) -> float | None:
     return REGISTRY.get_sample_value(name, {"query": query})
 
 
-def progress(name: str, behind: str, watermark: str) -> SimpleNamespace:
+def progress(name: str, behind: str, watermark: str, late_rows: int = 0) -> SimpleNamespace:
     return SimpleNamespace(
         name=name,
         id="id-1",
@@ -30,6 +30,7 @@ def progress(name: str, behind: str, watermark: str) -> SimpleNamespace:
         batchDuration=850,
         sources=[SimpleNamespace(metrics={"maxOffsetsBehindLatest": behind})],
         eventTime={"watermark": watermark},
+        stateOperators=[SimpleNamespace(numRowsDroppedByWatermark=late_rows)],
     )
 
 
@@ -50,6 +51,13 @@ def test_epoch_watermark_means_no_watermark_yet() -> None:
     record_progress(progress("no_watermark_test", "0", "1970-01-01T00:00:00.000Z"))
 
     assert value("skypulse_stream_watermark_delay_seconds", "no_watermark_test") is None
+
+
+def test_rows_dropped_by_the_watermark_are_counted() -> None:
+    record_progress(progress("late_test", "0", "1970-01-01T00:00:00.000Z", late_rows=3))
+    record_progress(progress("late_test", "0", "1970-01-01T00:00:00.000Z", late_rows=2))
+
+    assert value("skypulse_stream_late_rows_dropped_total", "late_test") == 5
 
 
 @pytest.mark.spark

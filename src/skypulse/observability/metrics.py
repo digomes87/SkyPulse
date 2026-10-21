@@ -34,6 +34,11 @@ OPENSKY_CREDITS = Gauge(
     "skypulse_opensky_credits_remaining", "OpenSky credits left today, as last reported"
 )
 HTTP_RETRIES = Counter("skypulse_http_retries", "HTTP requests retried", ["host"])
+LATE_ROWS_RECOVERED = Gauge(
+    "skypulse_backfill_recovered_rows",
+    "Rows the last backfill run inserted into silver from bronze",
+    ["table"],
+)
 
 
 def start_metrics_server(settings: Settings, default_port: int | None = None) -> bool:
